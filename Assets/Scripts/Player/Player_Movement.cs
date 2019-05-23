@@ -6,7 +6,7 @@ public class Player_Movement : MonoBehaviour
     private Rigidbody2D rb;                     // Reference to the player's physics object.
     private BoxCollider2D groundCheck;          // A hitbox that checks if the player is grounded.
     private Animator anim;                      // Reference to the player's animator component.
-    private LayerMask groundMask;                   // Reference to Ground layer mask.
+    private LayerMask groundMask;               // Reference to Ground layer mask.
     #endregion
 
     #region Input variables
@@ -28,7 +28,7 @@ public class Player_Movement : MonoBehaviour
     #endregion
 
     #region State Variables
-    public string state = "standing";           // The player's current state.
+    private string state = "standing";           // The player's current state.
 
     // Standing State
     public float moveForce = 365f;              // Amount of force added to move the player left and right.
@@ -45,12 +45,12 @@ public class Player_Movement : MonoBehaviour
     // Terminal Falling State
     public float terminalFallSpeed = 50;        // The player's terminal velocity (triggers terminalFall when reached).
     [HideInInspector]
-    public bool terminalFalling = false;            // Whether or not the player is terminalFalling.
+    public bool terminalFalling = false;        // Whether or not the player is terminalFalling.
 
     // Jumping State
     public int maxJumps = 1;                    // Numer of times the player can jump before landing.
-    public float jumpForceInitial = 60f;       // Amount of force added when the player jumps.
-    public float jumpForceAdded = 1f;          // Amount of force added each frame while the player holds jump.
+    public float jumpForceInitial = 60f;        // Amount of force added when the player jumps.
+    public float jumpForceAdded = 1f;           // Amount of force added each frame while the player holds jump.
     public float jumpTime = .5f;                // Maximum amount of time(ms) a player can gain jump speed.
     [HideInInspector]
     public float jumpStartTime;                 // Time the current jump started.
@@ -536,14 +536,12 @@ public class Player_Movement : MonoBehaviour
                     float vx = rb.velocity.x;
 
                     // If the player is in motion but has no horizontal input, slow them down.
-                    if (hInput == 0 && rb.velocity.x != 0)
+                    if (hInput == 0 && rb.velocity.x != 0) 
                         rb.AddForce(Vector2.right * (moveForce / 16) * Mathf.Sign(-vx));
 
                     // If the player's horizontal velocity is less than max speed add force to the player based on input.
-                    else if (hInput * vx < maxSpeed)
+                    else if (Mathf.Sign(hInput) * vx < maxSpeed)
                         rb.AddForce(Vector2.right * hInput * moveForce);
-
-
 
                     // If the player's horizontal velocity is greater than the maxSpeed set it equal to the maxSpeed.
                     if (Mathf.Abs(rb.velocity.x) > maxSpeed)

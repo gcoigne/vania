@@ -20,7 +20,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4403888705211314}
   - component: {fileID: 61838597754706990}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Ground_Check
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37,12 +37,13 @@ GameObject:
   - component: {fileID: 4851455940697024}
   - component: {fileID: 212238800260516712}
   - component: {fileID: 50049672355273720}
+  - component: {fileID: 61977354574261532}
   - component: {fileID: 70705863280318290}
   - component: {fileID: 95536264270875884}
   - component: {fileID: 114999161150214460}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Basic_Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -90,7 +91,7 @@ Rigidbody2D:
   m_AngularDrag: 0
   m_GravityScale: 1
   m_Material: {fileID: 0}
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
@@ -119,15 +120,40 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1, y: 0.01}
   m_EdgeRadius: 0
---- !u!70 &70705863280318290
-CapsuleCollider2D:
+--- !u!61 &61977354574261532
+BoxCollider2D:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1862228675445162}
   m_Enabled: 1
   m_Density: 1
-  m_Material: {fileID: 6200000, guid: 0d0e502c6b2c07341ab08213c1b32b23, type: 2}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1, y: 1}
+    newSize: {x: 1, y: 1}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1}
+  m_EdgeRadius: 0
+--- !u!70 &70705863280318290
+CapsuleCollider2D:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1862228675445162}
+  m_Enabled: 0
+  m_Density: 1
+  m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
@@ -163,7 +189,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grounded: 0
-  state: standing
   moveForce: 250
   maxSpeed: 5
   facingRight: 1
@@ -173,7 +198,7 @@ MonoBehaviour:
   terminalFalling: 0
   maxJumps: 1
   jumpForceInitial: 250
-  jumpForceAdded: 10
+  jumpForceAdded: 15
   jumpTime: 0.5
   jumpStartTime: 0
   jumps: 0
