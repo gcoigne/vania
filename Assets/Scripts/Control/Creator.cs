@@ -14,7 +14,7 @@ public class Creator : MonoBehaviour {
 	// Use this for initialization
 	void Start ()
     {
-        createPlayer(new Vector3(-6f, 0f, 0f));
+        createPlayer(new Vector3(0f, 0f, 0f));
         createPlatform(new Vector3(0f, -3.5f, 4), 128f);
         createPlatform(new Vector3(-4f, 0.5f, 0f), 2f);
         createOneway(new Vector3(4f, 0.5f, 0f), 2f);

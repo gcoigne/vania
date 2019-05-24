@@ -189,9 +189,11 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 1256850503}
+  - component: {fileID: 1256850506}
   - component: {fileID: 1256850502}
   - component: {fileID: 1256850501}
   - component: {fileID: 1256850504}
+  - component: {fileID: 1256850505}
   m_Layer: 10
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -261,7 +263,7 @@ MonoBehaviour:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1256850500}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: be49bb3120dcad44ba4ee98d271f50cc, type: 3}
   m_Name: 
@@ -275,6 +277,46 @@ MonoBehaviour:
   maxY: 1024
   minX: -1024
   minY: 0
+--- !u!114 &1256850505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1256850500}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac9904b134efccf469fdee06ac86df50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxSpeed: 10
+  maxForce: 20
+  relForceX: 1
+  relForceY: 0
+  leadTime: 1
+  marginX: 2
+  marginY: 0
+  leashX: 4
+  leashY: 2
+--- !u!50 &1256850506
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1256850500}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0
+  m_GravityScale: 0
+  m_Material: {fileID: 0}
+  m_Interpolate: 1
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 4
 --- !u!1 &1301514100
 GameObject:
   m_ObjectHideFlags: 0

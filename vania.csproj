@@ -285,6 +285,7 @@
     <Compile Include="Assets\Scripts\Control\Creator.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyMovement.cs" />
     <Compile Include="Assets\Scripts\Player\Player_Movement.cs" />
+    <Compile Include="Assets\Scripts\Visual\Camera_Dynamic.cs" />
     <Compile Include="Assets\Scripts\Visual\Camera_Follow.cs" />
   </ItemGroup>
   <ItemGroup>
