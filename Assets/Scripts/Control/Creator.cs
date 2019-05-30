@@ -16,8 +16,8 @@ public class Creator : MonoBehaviour {
     {
         createPlayer(new Vector3(0f, 0f, 0f));
         createPlatform(new Vector3(0f, -3.5f, 4), 128f);
-        createPlatform(new Vector3(-4f, 0.5f, 0f), 2f);
-        createOneway(new Vector3(4f, 0.5f, 0f), 2f);
+        createPlatform(new Vector3(-5f, 0.5f, 0f), 4f);
+        createOneway(new Vector3(5f, 0.5f, 0f), 4f);
 	}
 	
 	// Update is called once per frame

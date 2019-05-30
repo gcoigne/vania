@@ -5,20 +5,27 @@ using UnityEngine;
 public class EnemyMovement : MonoBehaviour {
 
     #region References to objects
-    private Rigidbody2D rb;                     // Reference to the enemy's physics object.
+    private Rigidbody2D rb;                     // The enemy's physics component.
+    private BoxCollider2D hitbox;               // The player's main hitbox.
     private BoxCollider2D groundCheck;          // A hitbox that checks if the enemy is grounded.
-    private Animator anim;                      // Reference to the enemy's animator component.
+    private BoxCollider2D groundLeft;           // A hitbox that checks if there's ground to the enemy's left.
+    private BoxCollider2D groundRight;          // A hitbox that checks if there's ground to the enemy's right.
+    private Animator anim;                      // The enemy's animator component.
     private LayerMask groundMask;               // Reference to Ground layer mask.
     #endregion
 
     #region Physics variables
-    private Vector2[] groundPoints;
     public bool grounded = false;               // Whether or not the enemy is in contact with the ground.
+    public bool groundedLeft = false;           // Whether or not there is ground to the left.
+    public bool groundedRight = false;          // Whether or not there is ground to the right.
     #endregion
 
     #region State and Behavior Variables
-    public string state = "standing";
-    public string behavior = "none";
+    public string state = "standing";           // Current physics state.
+    public float stateTime = 0f;                // Time (frames) when the enemy switched into this state.
+    public string behavior = "none";            // Current behavior
+    public float behaviorTime = 0f;             // Time (frames) when the enemy switched into this behavior.
+    public float behaviorWait = 0f;             // Time (frames) the enemy waits when entering a new behavior.
     #endregion
 
     #region Movement Variables
@@ -35,15 +42,14 @@ public class EnemyMovement : MonoBehaviour {
     {
         #region Set up references
         rb = GetComponent<Rigidbody2D>();
-        groundCheck = transform.Find("Ground_Check").GetComponent<BoxCollider2D>();
-        //anim = GetComponent<Animator>();
+        Transform groundTriggers = transform.Find("Ground_Triggers");
+        groundCheck = groundTriggers.Find("Center").GetComponent<BoxCollider2D>();
+        groundLeft = groundTriggers.Find("Left_Whisker").GetComponent<BoxCollider2D>();
+        groundRight = groundTriggers.Find("Right_Whisker").GetComponent<BoxCollider2D>();
         groundMask = LayerMask.GetMask("Ground");
         #endregion
 
         #region Initialize variables
-        groundPoints[0] = new Vector2(transform.position.x - transform.localScale.x / 2, transform.position.y - transform.localScale.y / 2);
-        groundPoints[1] = new Vector2(transform.position.x, transform.position.y - transform.localScale.y / 2);
-        groundPoints[2] = new Vector3(transform.position.x + transform.localScale.x / 2, transform.position.y - transform.localScale.y / 2);
         #endregion
     }
 
@@ -55,21 +61,107 @@ public class EnemyMovement : MonoBehaviour {
 
     void FixedUpdate()
     {
-        #region movement
+        #region Physics Variables
+        grounded = Physics2D.IsTouchingLayers(groundCheck, groundMask);
+        groundedLeft = Physics2D.IsTouchingLayers(groundLeft, groundMask);
+        groundedRight = Physics2D.IsTouchingLayers(groundRight, groundMask);
+        #endregion
+
+        #region State and Behavior Transitions
+        if (grounded)
+        {
+            switch (state)
+            {
+                case ("standing"):
+                    switch (behavior)
+                    {
+                        case ("moveLeft"):
+                            if (groundedLeft)
+                            {
+
+                            }
+                            else
+                            {
+                                if (Time.frameCount - behaviorWait > behaviorTime)
+                                {
+                                    rb.velocity = Vector2.zero;
+                                    behavior = "moveRight";
+                                    behaviorTime = Time.frameCount;
+                                }
+                            }
+                            break;
+
+                        case ("moveRight"):
+                            if (groundedRight)
+                            {
+
+                            }
+                            else
+                            {
+                                if (Time.frameCount - behaviorWait > behaviorTime)
+                                {
+                                    rb.velocity = Vector2.zero;
+                                    behavior = "moveLeft";
+                                    behaviorTime = Time.frameCount;
+                                }
+                            }
+                            break;
+                    }
+                    break;
+            }
+        }
+        else
+        {
+            switch (state)
+            {
+                case ("standing"):
+                    switch (behavior)
+                    {
+                        case ("moveLeft"):
+                            break;
+
+                        case ("moveRight"):
+                            break;
+                    }
+                    break;
+            }
+        }
+        
+        #endregion
+
+        #region Movement
+        float vx, vy;
         switch(state)
         {
             case ("standing"):
                 switch (behavior)
                 {
                     case ("moveLeft"):
-                        float vx = rb.velocity.x;
-                        // If the enemy's horizontal velocity is less than max speed add force to the enemy based on input.
-                        if (-vx < maxSpeed)
-                            rb.AddForce(-Vector2.right * moveForce);
+                        if (Time.frameCount - behaviorWait > behaviorTime)
+                        {
+                            vx = rb.velocity.x;
+                            // If the enemy's horizontal velocity is less than max speed add force to the enemy based on input.
+                            if (Mathf.Abs(vx) < maxSpeed)
+                                rb.AddForce(-Vector2.right * moveForce);
 
-                        // If the enemy's horizontal velocity is greater than the maxSpeed set it equal to the maxSpeed.
-                        if (Mathf.Abs(rb.velocity.x) > maxSpeed)
-                            rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);
+                            // If the enemy's horizontal velocity is greater than the maxSpeed set it equal to the maxSpeed.
+                            if (Mathf.Abs(rb.velocity.x) > maxSpeed)
+                                rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);
+                        }
+                        break;
+
+                    case ("moveRight"):
+                        if (Time.frameCount - behaviorWait > behaviorTime)
+                        {
+                            vx = rb.velocity.x;
+                            // If the enemy's horizontal velocity is less than max speed add force to the enemy based on input.
+                            if (Mathf.Abs(vx) < maxSpeed)
+                                rb.AddForce(Vector2.right * moveForce);
+
+                            // If the enemy's horizontal velocity is greater than the maxSpeed set it equal to the maxSpeed.
+                            if (Mathf.Abs(rb.velocity.x) > maxSpeed)
+                                rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);
+                        }
                         break;
                 }
                 break;

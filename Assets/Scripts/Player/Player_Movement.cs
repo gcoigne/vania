@@ -4,7 +4,10 @@ public class Player_Movement : MonoBehaviour
 {
     #region References to objects
     private Rigidbody2D rb;                     // Reference to the player's physics object.
+    private BoxCollider2D hitbox;               // The player's main hitbox.
     private BoxCollider2D groundCheck;          // A hitbox that checks if the player is grounded.
+    private BoxCollider2D groundLeft;
+    private BoxCollider2D groundRight;
     private Animator anim;                      // Reference to the player's animator component.
     private LayerMask groundMask;               // Reference to Ground layer mask.
     #endregion
@@ -25,10 +28,12 @@ public class Player_Movement : MonoBehaviour
 
     #region Physics variables
     public bool grounded = false;               // Whether or not the player is in contact with the ground.
+    public float gravScale = 1;
     #endregion
 
     #region State Variables
-    private string state = "standing";           // The player's current state.
+    private string state = "standing";         // Current physics state.
+    private float stateTime = 0f;              // Time (frames) when the player switched into the current state. 
 
     // Standing State
     public float moveForce = 365f;              // Amount of force added to move the player left and right.
@@ -48,14 +53,11 @@ public class Player_Movement : MonoBehaviour
     public bool terminalFalling = false;        // Whether or not the player is terminalFalling.
 
     // Jumping State
-    public int maxJumps = 1;                    // Numer of times the player can jump before landing.
+    public int airJumps = 1;                    // Numer of times the player can jump in midair before landing.
     public float jumpForceInitial = 60f;        // Amount of force added when the player jumps.
     public float jumpForceAdded = 1f;           // Amount of force added each frame while the player holds jump.
-    public float jumpTime = .5f;                // Maximum amount of time(ms) a player can gain jump speed.
-    [HideInInspector]
-    public float jumpStartTime;                 // Time the current jump started.
-    [HideInInspector]
-    public int jumps = 0;                       // Number of jumps the player has available.
+    public float jumpTime = 30f;                // Maximum amount of time (frames) a player can gain jump speed.
+    public int jumps = 0;                       // Number of air jumps the player has available.
     [HideInInspector]
     public bool jumping = false;                // Whether or not the player is jumping.
 
@@ -68,8 +70,6 @@ public class Player_Movement : MonoBehaviour
     public float dashSpeed = 20f;               // Speed the player travels while dashing.
     public float dashTime = 50f;                // Time(ms) a dash lasts.
     public float dashCooldown = 2000f;          // Time(ms) dashes take to cooldown.
-    [HideInInspector]
-    public float dashStartTime;                 // Time the current dash started.]
     [HideInInspector]
     public int dashes = 0;                      // Number of dashes the player has available.
     [HideInInspector]
@@ -84,42 +84,42 @@ public class Player_Movement : MonoBehaviour
 
     #region Animation cancels
 
-    // Whether or not a player may cancel from the first state into the second via input.
-    // Some cancels lead to unique moves.
-    // This section seems like baggage, as you'll need to develop custom actions individually. Its only real use is enabling cancels when the player
-    // gains an ability, but it should be done on ability basis, not input basis. The current layout is long and clogs Inspector w/ public fields.
+    //// Whether or not a player may cancel from the first state into the second via input.
+    //// Some cancels lead to unique moves.
+    //// This section seems like baggage, as you'll need to develop custom actions individually. Its only real use is enabling cancels when the player
+    //// gains an ability, but it should be done on ability basis, not input basis. The current layout is long and clogs Inspector w/ public fields.
 
-    // into jumping
-    public bool jumpJumpCancel = true;          // Air jump before the first jump ends.
-    public bool fallJumpCancel = true;          // Air jump at downward velocity.
-    public bool terminalFallJumpCancel = false;     // Air jump at terminal velocity.
-    public bool crouchJumpCancel = true;        // Crouch jump.
-    public bool dashJumpCancel = true;          // Dash jump preserves most momentum.
-    public bool attackJumpCancel = false;       // N/A
+    //// into jumping
+    //public bool jumpJumpCancel = true;          // Air jump before the first jump ends.
+    //public bool fallJumpCancel = true;          // Air jump at downward velocity.
+    //public bool terminalFallJumpCancel = false; // Air jump at terminal velocity.
+    //public bool crouchJumpCancel = true;        // Crouch jump.
+    //public bool dashJumpCancel = true;          // Dash jump preserves most momentum.
+    //public bool attackJumpCancel = false;       // N/A
 
-    // into crouching
-    public bool jumpCrouchCancel = false;       // N/A
-    public bool fallCrouchCancel = true;        // Fastfall
-    public bool terminalFallCrouchCancel = false;   // Splat
-    public bool crouchCrouchCancel = true;      // Jump down through platforms.
-    public bool dashCrouchCancel = true;        // Slide under enemies. Slower than dash.
-    public bool attackCrouchCancel = false;     // N/A
+    //// into crouching
+    //public bool jumpCrouchCancel = false;       // N/A
+    //public bool fallCrouchCancel = true;        // Fastfall
+    //public bool terminalFallCrouchCancel = false;   // Splat
+    //public bool crouchCrouchCancel = true;      // Jump down through platforms.
+    //public bool dashCrouchCancel = true;        // Slide under enemies. Slower than dash.
+    //public bool attackCrouchCancel = false;     // N/A
 
-    // into dashing
-    public bool jumpDashCancel = true;          // Midair dash.
-    public bool fallDashCancel = true;          // Midair dash.
-    public bool terminalFallDashCancel = false;     // Maybe, but you'd keep vertical momentum.
-    public bool crouchDashCancel = true;        // Slide under enemies. Slower than dash.
-    public bool dashDashCancel = false;         // Leaving this off to force good timing.
-    public bool attackDashCancel = false;       // Maybe some attacks/weapons can do this.
+    //// into dashing
+    //public bool jumpDashCancel = true;          // Midair dash.
+    //public bool fallDashCancel = true;          // Midair dash.
+    //public bool terminalFallDashCancel = false;     // Maybe, but you'd keep vertical momentum.
+    //public bool crouchDashCancel = true;        // Slide under enemies. Slower than dash.
+    //public bool dashDashCancel = false;         // Leaving this off to force good timing.
+    //public bool attackDashCancel = false;       // Maybe some attacks/weapons can do this.
 
-    // into attacking
-    public bool jumpAttackCancel = true;        // Midair attack.
-    public bool fallAttackCancel = true;        // Midair attack.
-    public bool terminalFallAttackCancel = true;    // Aerial Coup de Grace. Lethal on miss.
-    public bool crouchAttackCancel = true;      // Low attack/launcher.
-    public bool dashAttackCancel = true;        // Dash attack.
-    public bool attackAttackCancel = false;     // Attacks will chain based on buffered inputs.
+    //// into attacking
+    //public bool jumpAttackCancel = true;        // Midair attack.
+    //public bool fallAttackCancel = true;        // Midair attack.
+    //public bool terminalFallAttackCancel = true;    // Aerial Coup de Grace. Lethal on miss.
+    //public bool crouchAttackCancel = true;      // Low attack/launcher.
+    //public bool dashAttackCancel = true;        // Dash attack.
+    //public bool attackAttackCancel = false;     // Attacks will chain based on buffered inputs.
     #endregion
 
     // Use this for initialization
@@ -127,8 +127,11 @@ public class Player_Movement : MonoBehaviour
     {
         #region Set up references.
         rb = GetComponent<Rigidbody2D>();
-        groundCheck = transform.Find("Ground_Check").GetComponent<BoxCollider2D>();
-        //anim = GetComponent<Animator>();
+        hitbox = GetComponent<BoxCollider2D>();
+        Transform groundTriggers = transform.Find("Ground_Triggers");
+        groundCheck = groundTriggers.Find("Center").GetComponent<BoxCollider2D>();
+        groundLeft = groundTriggers.Find("Left_Whisker").GetComponent<BoxCollider2D>();
+        groundRight = groundTriggers.Find("Right_Whisker").GetComponent<BoxCollider2D>();
         groundMask = LayerMask.GetMask("Ground");
         #endregion
     }
@@ -156,7 +159,7 @@ public class Player_Movement : MonoBehaviour
         grounded = Physics2D.IsTouchingLayers(groundCheck, groundMask);
         if (grounded)
         {
-            jumps = maxJumps;
+            jumps = airJumps;
         }
         #endregion
 
@@ -167,20 +170,16 @@ public class Player_Movement : MonoBehaviour
             {
                 #region standing
                 case "standing":
-                    if (jumpPress && jumps > 0)
+                    if (jumpPress)
                     {
-                        // Transition from standing to jumping.
                         standingJump();
-                        jumps--;
                     }
                     else if (dashPress)
                     {
-                        // Transition from standing to dashing.
                         standingDash();
                     }
                     else if (attackPress)
                     {
-                        // Transition from standing to attacking.
                         attack();
                     }
                     break;
@@ -195,34 +194,17 @@ public class Player_Movement : MonoBehaviour
 
                     else if (dashPress)
                     {
-                        if (fallDashCancel && dashes > 0)
+                        if (dashes > 0)
                         {
-                            // Set the Dash animator trigger parameter.
-                            anim.SetTrigger("Dash");
 
-                            //// Play a random Dash audio clip.
-                            //int i = Random.Range(0, DashClips.Length);
-                            //AudioSource.PlayClipAtPoint(DashClips[i], transform.position);
-
-                            // Call dash function.
-
-                            // Transition from falling state to dashing state.
-                            falling = false;
-                            dashing = true;
                         }
                     }
 
                     else if (attackPress)
                     {
-                        if (fallAttackCancel && canAttack)
+                        if (canAttack)
                         {
-                            // Attack anim and audio stuff
 
-                            // Call the appropriate attack function.
-
-                            // Transition from falling state to attacking state.
-                            falling = false;
-                            attacking = true;
                         }
                     }
 
@@ -238,59 +220,31 @@ public class Player_Movement : MonoBehaviour
                 case "terminalFalling":
                     if (jumpPress)
                     {
-                        if (terminalFallJumpCancel && jumps > 0)
+                        if (jumps > 0)
                         {
-                            // Set the Jump animator trigger parameter.
-                            anim.SetTrigger("Jump");
 
-                            //// Play a random Jump audio clip.
-                            //int i = Random.Range(0, jumpClips.Length);
-                            //AudioSource.PlayClipAtPoint(jumpClips[i], transform.position);
-
-                            // Call Jump function
-
-                            // Transition from terminalFalling state to jumping state.
-                            terminalFalling = false;
-                            jumping = true;
                         }
                     }
 
                     else if (dashPress)
                     {
-                        if (terminalFallDashCancel && dashes > 0)
+                        if (dashes > 0)
                         {
-                            // Set the Dash animator trigger parameter.
-                            anim.SetTrigger("Dash");
 
-                            //// Play a random Dash audio clip.
-                            //int i = Random.Range(0, DashClips.Length);
-                            //AudioSource.PlayClipAtPoint(DashClips[i], transform.position);
-
-                            // Call dash function.
-
-                            // Transition from terminalFalling state to dashing state.
-                            terminalFalling = false;
-                            dashing = true;
                         }
                     }
 
                     else if (attackPress)
                     {
-                        if (terminalFallAttackCancel && canAttack)
+                        if (canAttack)
                         {
-                            // Attack anim and audio stuff
 
-                            // Call the appropriate attack function.
-
-                            // Transition from terminalFalling state to attacking state.
-                            terminalFalling = false;
-                            attacking = true;
                         }
                     }
 
                     else
                     {
-                        // Aerial controls.
+
                     }
                     break;
                 #endregion
@@ -299,34 +253,30 @@ public class Player_Movement : MonoBehaviour
                 case "jumping":
                     if (jumpPress)
                     {
-                        if (jumpJumpCancel && jumps > 0)
+                        if (jumps > 0)
                         {
-                            // Transition from jumping to jumping.
                             jumpingJump();
                         }
                     }
 
                     else if (dashPress)
                     {
-                        if (jumpDashCancel && dashes > 0)
+                        if (dashes > 0)
                         {
-                            // Transition from jumping to dashing.
                             standingDash();
                         }
                     }
 
                     else if (attackPress)
                     {
-                        if (jumpAttackCancel && canAttack)
+                        if (canAttack)
                         {
-                            // Transition from jumping to attacking
-                            //...
                         }
                     }
 
                     else
                     {
-                        if (jumpHold && Time.time <= (jumpStartTime + jumpTime))
+                        if (jumpHold && Time.frameCount <= (stateTime + jumpTime))
                         {
                             GetComponent<Rigidbody2D>().AddForce(new Vector2(0f, jumpForceAdded));
                         }
@@ -343,7 +293,7 @@ public class Player_Movement : MonoBehaviour
                 case "dashing":
                     if (jumpPress)
                     {
-                        if (dashJumpCancel && jumps > 0)
+                        if (jumps > 0)
                         {
                             // Transition from dashing to jumping.
                             dashingJump();
@@ -352,7 +302,7 @@ public class Player_Movement : MonoBehaviour
 
                     else if (dashPress)
                     {
-                        if (dashDashCancel && dashes > 0)
+                        if (dashes > 0)
                         {
                             // Call Dash function.
                             dashingDash();
@@ -361,7 +311,7 @@ public class Player_Movement : MonoBehaviour
 
                     else if (attackPress)
                     {
-                        if (dashAttackCancel && canAttack)
+                        if (canAttack)
                         {
                             // Call appropriate attack function.
 
@@ -376,7 +326,7 @@ public class Player_Movement : MonoBehaviour
                         // Call slide function.
                     }
 
-                    else if (Time.time > (dashStartTime + dashTime))
+                    else if (Time.frameCount > (stateTime + dashTime))
                     {
                         dashing = false;
                     }
@@ -489,7 +439,7 @@ public class Player_Movement : MonoBehaviour
                         jumpingJump();
                         jumps--;
                     }
-                    else if (jumpHold && Time.time <= (jumpStartTime + jumpTime))
+                    else if (jumpHold && Time.frameCount <= (stateTime + jumpTime))
                     {
                         GetComponent<Rigidbody2D>().AddForce(new Vector2(0f, jumpForceAdded));
                     }
@@ -528,6 +478,8 @@ public class Player_Movement : MonoBehaviour
         #region Movement
         if (grounded)
         {
+            rb.gravityScale = 0;
+
             switch (state)
             {
                 #region standing
@@ -589,6 +541,8 @@ public class Player_Movement : MonoBehaviour
 
         else
         {
+            rb.gravityScale = gravScale;
+
             switch (state)
             {
                 #region standing
@@ -656,8 +610,10 @@ public class Player_Movement : MonoBehaviour
     #region State transition functions.
     private void fallingStand()
     {
-        //Set player state
+        rb.gravityScale = 0;
+
         state = "standing";
+        stateTime = Time.frameCount;
     }
 
     private void terminalFallingStand() { }
@@ -674,14 +630,21 @@ public class Player_Movement : MonoBehaviour
         // Add a vertical force to the player.
         GetComponent<Rigidbody2D>().AddForce(new Vector2(0f, jumpForceInitial));
 
-        // Record jump start time.
-        jumpStartTime = Time.time;
-
-        // Set player state
         state = "jumping";
+        stateTime = Time.frameCount;
     }
 
-    private void fallingJump() { }
+    private void fallingJump()
+    {
+        // Reset vertical velocity and add a vertical force to the player.
+        Vector2 v = rb.velocity;
+        v.y = 0f;
+        rb.velocity = v;
+        rb.AddForce(new Vector2(0f, jumpForceInitial));
+
+        state = "jumping";
+        stateTime = Time.frameCount;
+    }
 
     private void terminalFallingJump() { }
 
@@ -692,7 +655,9 @@ public class Player_Movement : MonoBehaviour
         v.y = 0f;
         rb.velocity = v;
         rb.AddForce(new Vector2(0f, jumpForceInitial));
+
         state = "jumping";
+        stateTime = Time.frameCount;
     }
 
     private void dashingJump()
@@ -709,6 +674,7 @@ public class Player_Movement : MonoBehaviour
     private void standingFall()
     {
         state = "falling";
+        stateTime = Time.frameCount;
     }
 
     private void terminalFall()
@@ -719,6 +685,7 @@ public class Player_Movement : MonoBehaviour
     private void jumpingFall()
     {
         state = "falling";
+        stateTime = Time.frameCount;
     }
 
     private void dashingFall() { }

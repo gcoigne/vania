@@ -54,6 +54,7 @@ public class Camera_Follow : MonoBehaviour {
 
         if (leadTime > 0)
         {
+            print("working");
             // The target vector is where the player would arrive after leadTime seconds with constant velocity.
             Vector2 targetVel = targetRB.velocity;
             float targetX = Mathf.Clamp(targetT.position.x + targetVel.x * leadTime, targetT.position.x - xMargin, targetT.position.x + xMargin);
@@ -65,12 +66,8 @@ public class Camera_Follow : MonoBehaviour {
             targetVector = new Vector3(targetT.position.x, targetT.position.y, transform.position.z);
         }
 
-        // If the target position is outside the margins
-        if (Mathf.Abs(transform.position.x - targetVector.x) > xMargin || Mathf.Abs(transform.position.y - targetVector.y) > yMargin)
-        {
-            // Move toward the target position.
-            destVector = Vector3.SmoothDamp(transform.position, targetVector, ref panVelocity, smoothTime, maxSpeed);
-        }
+        // Move toward the target position.
+        destVector = Vector3.SmoothDamp(transform.position, targetVector, ref panVelocity, smoothTime, maxSpeed);
 
         // Clamp x and y
         destVector.x = Mathf.Clamp(destVector.x, minX, maxX);
