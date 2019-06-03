@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.IO;
 
 public class Player_Movement : MonoBehaviour
 {
@@ -10,6 +11,7 @@ public class Player_Movement : MonoBehaviour
     private BoxCollider2D groundRight;
     private Animator anim;                      // Reference to the player's animator component.
     private LayerMask groundMask;               // Reference to Ground layer mask.
+    public GameObject playerAttack;             // Reference to the attack prefab.
     #endregion
 
     #region Input variables
@@ -180,7 +182,7 @@ public class Player_Movement : MonoBehaviour
                     }
                     else if (attackPress)
                     {
-                        attack();
+                        attack("standingBasic");
                     }
                     break;
                 #endregion
@@ -397,7 +399,7 @@ public class Player_Movement : MonoBehaviour
 
                     else if (attackPress && canAttack)
                     {
-                        attack();
+                        attack("standingBasic", 16f);
                     }
 
                     else if (vInput < -0.5f)
@@ -732,9 +734,11 @@ public class Player_Movement : MonoBehaviour
     }
 
     // Attacks are handled in another script. We just pass parameters to inform that script of our state.
-    private void attack()
+    private void attack(string attackType, float attackTime)
     {
-
+        string attackData = File.ReadAllText(Application.dataPath + "/Assets/Text/Player/Attacks" + attackType);
+        GameObject attack = Instantiate(playerAttack, transform);
+        attack.GetComponent<Player_Melee>().attackData = attackData;
     }
 
     // Turns the player around.

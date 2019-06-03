@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyMovement : MonoBehaviour {
+public class Enemy_Movement : MonoBehaviour {
 
     #region References to objects
     private Rigidbody2D rb;                     // The enemy's physics component.
