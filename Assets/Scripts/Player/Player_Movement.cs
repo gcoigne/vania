@@ -34,11 +34,15 @@ public class Player_Movement : MonoBehaviour
     #endregion
 
     #region State Variables
-    private string state = "standing";         // Current physics state.
-    private float stateTime = 0f;              // Time (frames) when the player switched into the current state. 
+    private string state = "standing";          // Current physics state.
+    private float stateStart = 0f;              // Time (frames) when the player switched into the current state.
+    private string action = "none";             // Player's current action.
+    private float actionStart = 0f;             // Time (frames) when the player started current action.
+    private float actionDur = 0f;               // Duration of current action.
 
     // Standing State
-    public float moveForce = 365f;              // Amount of force added to move the player left and right.
+    public float moveForce = 256f;              // Amount of force added to move the player left and right.
+    public float airForce = 64f;                // Amount of horizontal force added while midair.
     public float maxSpeed = 5f;                 // The fastest the player can travel in the x axis.
     [HideInInspector]
     public bool facingRight = true;             // For determining which way the player is currently facing.
@@ -58,7 +62,7 @@ public class Player_Movement : MonoBehaviour
     public int airJumps = 1;                    // Numer of times the player can jump in midair before landing.
     public float jumpForceInitial = 60f;        // Amount of force added when the player jumps.
     public float jumpForceAdded = 1f;           // Amount of force added each frame while the player holds jump.
-    public float jumpTime = 30f;                // Maximum amount of time (frames) a player can gain jump speed.
+    public float jumpDur = 30f;                 // Maximum amount of time (frames) a player can gain jump speed.
     public int jumps = 0;                       // Number of air jumps the player has available.
     [HideInInspector]
     public bool jumping = false;                // Whether or not the player is jumping.
@@ -70,7 +74,7 @@ public class Player_Movement : MonoBehaviour
     // Dashing State
     public int maxDashes = 1;                   // Number of times the player can dash before landing/waiting.
     public float dashSpeed = 20f;               // Speed the player travels while dashing.
-    public float dashTime = 50f;                // Time(ms) a dash lasts.
+    public float dashDur = 50f;                // Time(ms) a dash lasts.
     public float dashCooldown = 2000f;          // Time(ms) dashes take to cooldown.
     [HideInInspector]
     public int dashes = 0;                      // Number of dashes the player has available.
@@ -136,6 +140,7 @@ public class Player_Movement : MonoBehaviour
         groundRight = groundTriggers.Find("Right_Whisker").GetComponent<BoxCollider2D>();
         groundMask = LayerMask.GetMask("Ground");
         #endregion
+        attack("standingBasic",0f);
     }
 
     // Update is called once per frame. It is mainly used for caching user input and rendering.
@@ -165,475 +170,124 @@ public class Player_Movement : MonoBehaviour
         }
         #endregion
 
-        #region State transitions
-        if (grounded)
-        {   
-            switch (state)
-            {
-                #region standing
-                case "standing":
-                    if (jumpPress)
+        #region Action resolution
+        if ((action != "none") && (actionStart + actionDur <= Time.frameCount))
+        {
+            endAction();
+        }
+        switch (action)
+        {
+            #region none
+            case "none":
+                if (jumpPress)
+                {
+                    if (grounded)
                     {
                         standingJump();
                     }
-                    else if (dashPress)
+                    else if (jumps > 0)
                     {
-                        standingDash();
-                    }
-                    else if (attackPress)
-                    {
-                        attack("standingBasic");
-                    }
-                    break;
-                #endregion
-
-                #region falling
-                case "falling":
-                    if (jumpPress)
-                    {
-
-                    }
-
-                    else if (dashPress)
-                    {
-                        if (dashes > 0)
-                        {
-
-                        }
-                    }
-
-                    else if (attackPress)
-                    {
-                        if (canAttack)
-                        {
-
-                        }
-                    }
-
-                    else
-                    {
-                        // Landing
-                        fallingStand();
-                    }
-                    break;
-                #endregion
-
-                #region terminalFalling
-                case "terminalFalling":
-                    if (jumpPress)
-                    {
-                        if (jumps > 0)
-                        {
-
-                        }
-                    }
-
-                    else if (dashPress)
-                    {
-                        if (dashes > 0)
-                        {
-
-                        }
-                    }
-
-                    else if (attackPress)
-                    {
-                        if (canAttack)
-                        {
-
-                        }
-                    }
-
-                    else
-                    {
-
-                    }
-                    break;
-                #endregion
-
-                #region jumping
-                case "jumping":
-                    if (jumpPress)
-                    {
-                        if (jumps > 0)
-                        {
-                            jumpingJump();
-                        }
-                    }
-
-                    else if (dashPress)
-                    {
-                        if (dashes > 0)
-                        {
-                            standingDash();
-                        }
-                    }
-
-                    else if (attackPress)
-                    {
-                        if (canAttack)
-                        {
-                        }
-                    }
-
-                    else
-                    {
-                        if (jumpHold && Time.frameCount <= (stateTime + jumpTime))
-                        {
-                            GetComponent<Rigidbody2D>().AddForce(new Vector2(0f, jumpForceAdded));
-                        }
-                        else
-                        {
-                            // Transition from jumping to falling
-                            jumpingFall();
-                        }
-                    }
-                    break;
-                #endregion
-
-                #region dashing
-                case "dashing":
-                    if (jumpPress)
-                    {
-                        if (jumps > 0)
-                        {
-                            // Transition from dashing to jumping.
-                            dashingJump();
-                        }
-                    }
-
-                    else if (dashPress)
-                    {
-                        if (dashes > 0)
-                        {
-                            // Call Dash function.
-                            dashingDash();
-                        }
-                    }
-
-                    else if (attackPress)
-                    {
-                        if (canAttack)
-                        {
-                            // Call appropriate attack function.
-
-                            // Transition from dashing state to attacking state.
-                            dashing = false;
-                            attacking = true;
-                        }
-                    }
-
-                    else if (vInput < -.5f && standing)
-                    {
-                        // Call slide function.
-                    }
-
-                    else if (Time.frameCount > (stateTime + dashTime))
-                    {
-                        dashing = false;
-                    }
-
-                    else
-                    {
-                        if (facingRight)
-                            rb.velocity = new Vector2(dashSpeed, 0);
-                        else
-                            rb.velocity = new Vector2(-dashSpeed, 0);
-                    }
-                    break;
-                #endregion
-
-                #region attacking
-                case "attacking":
-                    break;
-                #endregion
-
-                #region crouching
-                case "crouching":
-                    break;
-                #endregion
-
-                #region default
-                default:
-                    break;
-                    #endregion
-            }
-        }
-
-        else
-        {
-            switch (state)
-            {
-                #region standing
-                case "standing":
-
-                    if (jumpPress && jumps > 0)
-                    {
-                        if (vInput < 0.5f)
-                        {
-                            crouchingJump();
-                        }
-
-                        else
-                        {
-                            standingJump();
-                        }
-
-                        // Jumping controls
-                    }
-
-                    else if (dashPress && dashes > 0)
-                    {
-                        if (vInput < 0.5f)
-                        {
-                            crouchingDash();
-                        }
-
-                        else
-                        {
-                            standingDash();
-                        }
-
-                        // Dashing controls
-                    }
-
-                    else if (attackPress && canAttack)
-                    {
-                        attack("standingBasic", 16f);
-                    }
-
-                    else if (vInput < -0.5f)
-                    {
-                        standingCrouch();
-
-                        // Crouching controls.
-                    }
-
-                    else
-                    {
-                        standingFall();
-                    }
-
-                    break;
-                #endregion
-
-                #region falling
-                case "falling":
-                    if (jumpPress && jumps > 0)
-                    {
-                        // Transition from falling to jumping.
                         fallingJump();
                         jumps--;
                     }
-                    break;
-                #endregion
+                }
+                else if (dashPress)
+                {
 
-                #region terminalFalling
-                case "terminalFalling":
-                    break;
-                #endregion
+                }
+                else if (attackPress)
+                {
+                    attack("standingBasic", 16f);
+                }
+                break;
+            #endregion
 
-                #region jumping
-                case "jumping":
-                    if (jumpPress && jumps > 0)
-                    {
-                        // Transition from standing to jumping.
-                        jumpingJump();
-                        jumps--;
-                    }
-                    else if (jumpHold && Time.frameCount <= (stateTime + jumpTime))
-                    {
-                        GetComponent<Rigidbody2D>().AddForce(new Vector2(0f, jumpForceAdded));
-                    }
-                    else
-                    {
-                        // Transition from jumping to falling
-                        jumpingFall();
-                    }
+            #region jumping
+            case "jumping":
+                if (jumpHold)
+                {
+                    GetComponent<Rigidbody2D>().AddForce(new Vector2(0f, jumpForceAdded));
+                }
+                else
+                {
+                    endAction();
+                }
+                break;
+            #endregion
 
-                    break;
-                #endregion
+            #region dashing
+            case "dashing":
+                break;
+            #endregion
 
-                #region dashing
-                case "dashing":
-                    break;
-                #endregion
-
-                #region attacking
-                case "attacking":
-                    break;
-                #endregion
-
-                #region crouching
-                case "crouching":
-                    break;
-                #endregion
-
-                #region default
-                default:
-                    break;
-                    #endregion
-            }
+            #region attacking
+            case "attacking":
+                break;
+            #endregion
         }
         #endregion
 
         #region Movement
-        if (grounded)
+        Vector2 vel = rb.velocity;
+        switch (action)
         {
-            rb.gravityScale = 0;
+            #region none
+            case "none":
+                // If the player is in motion but has no horizontal input, slow them down.
+                if (hInput == 0 && rb.velocity.x != 0)
+                    rb.AddForce(Vector2.right * (moveForce / 16) * Mathf.Sign(-vel.x));
 
-            switch (state)
-            {
-                #region standing
-                case "standing":
-
-                    float vx = rb.velocity.x;
-
-                    // If the player is in motion but has no horizontal input, slow them down.
-                    if (hInput == 0 && rb.velocity.x != 0) 
-                        rb.AddForce(Vector2.right * (moveForce / 16) * Mathf.Sign(-vx));
-
-                    // If the player's horizontal velocity is less than max speed add force to the player based on input.
-                    else if (Mathf.Sign(hInput) * vx < maxSpeed)
+                // If the player's horizontal velocity is less than max speed add force to the player based on input.
+                else if (Mathf.Sign(hInput) * vel.x < maxSpeed)
+                    if (grounded)
+                    {
                         rb.AddForce(Vector2.right * hInput * moveForce);
+                    }
+                    else
+                    {
+                        rb.AddForce(Vector2.right * hInput * airForce);
+                    }
 
-                    // If the player's horizontal velocity is greater than the maxSpeed set it equal to the maxSpeed.
-                    if (Mathf.Abs(rb.velocity.x) > maxSpeed)
-                        rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);
+                // If the player's horizontal velocity is greater than the maxSpeed set it equal to the maxSpeed.
+                if (Mathf.Abs(vel.x) > maxSpeed)
+                    rb.velocity = new Vector2(Mathf.Sign(vel.x) * maxSpeed, vel.y);
 
-                    break;
-                #endregion
+                break;
+            #endregion
 
-                #region falling
-                case "falling":
-                    break;
-                #endregion
+            #region jumping
+            case "jumping":
+                break;
+            #endregion
 
-                #region terminalFalling
-                case "terminalFalling":
-                    break;
-                #endregion
+            #region dashing
+            case "dashing":
+                break;
+            #endregion
 
-                #region jumping
-                case "jumping":
-                    break;
-                #endregion
-
-                #region dashing
-                case "dashing":
-                    break;
-                #endregion
-
-                #region attacking
-                case "attacking":
-                    break;
-                #endregion
-
-                #region crouching
-                case "crouching":
-                    break;
-                #endregion
-
-                #region default
-                default:
-                    break;
-                    #endregion
-            }
-        }
-
-        else
-        {
-            rb.gravityScale = gravScale;
-
-            switch (state)
-            {
-                #region standing
-                case "standing":
-                    break;
-                #endregion
-
-                #region falling
-                case "falling":
-
-                    // If the player's horizontal velocity is less than max speed add force to the player based on input.
-                    if (hInput * rb.velocity.x < maxSpeed)
-                        rb.AddForce(Vector2.right * hInput * moveForce / 4);
-
-                    // If the player's horizontal velocity is greater than the maxSpeed set it equal to the maxSpeed.
-                    if (Mathf.Abs(rb.velocity.x) > maxSpeed)
-                        rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);
-
-                    break;
-                #endregion
-
-                #region terminalFalling
-                case "terminalFalling":
-                    break;
-                #endregion
-
-                #region jumping
-                case "jumping":
-
-                    // If the player's horizontal velocity is less than max speed add force to the player based on input.
-                    if (hInput * rb.velocity.x < maxSpeed)
-                        rb.AddForce(Vector2.right * hInput * moveForce / 4);
-
-                    // If the player's horizontal velocity is greater than the maxSpeed set it equal to the maxSpeed.
-                    if (Mathf.Abs(rb.velocity.x) > maxSpeed)
-                        rb.velocity = new Vector2(Mathf.Sign(rb.velocity.x) * maxSpeed, rb.velocity.y);
-
-                    break;
-                #endregion
-
-                #region dashing
-                case "dashing":
-                    break;
-                #endregion
-
-                #region attacking
-                case "attacking":
-                    break;
-                #endregion
-
-                #region crouching
-                case "crouching":
-                    break;
-                #endregion
-
-                #region default
-                default:
-                    break;
-                    #endregion
-            }
+            #region attacking
+            case "attacking":
+                break;
+            #endregion
         }
         #endregion
     }
 
-    #region State transition functions.
-    private void fallingStand()
+    #region Action functions
+    private void endAction()
     {
-        rb.gravityScale = 0;
-
-        state = "standing";
-        stateTime = Time.frameCount;
+        action = "none";
+        actionStart = Time.frameCount;
     }
-
-    private void terminalFallingStand() { }
-
-    private void jumpingStand() { }
-
-    private void dashingStand() { }
-
-    private void crouchingStand() { }
-
 
     private void standingJump()
     {
         // Add a vertical force to the player.
         GetComponent<Rigidbody2D>().AddForce(new Vector2(0f, jumpForceInitial));
 
-        state = "jumping";
-        stateTime = Time.frameCount;
+        action = "jumping";
+        actionStart = Time.frameCount;
+        actionDur = jumpDur;
     }
 
     private void fallingJump()
@@ -645,101 +299,23 @@ public class Player_Movement : MonoBehaviour
         rb.AddForce(new Vector2(0f, jumpForceInitial));
 
         state = "jumping";
-        stateTime = Time.frameCount;
+        stateStart = Time.frameCount;
     }
-
-    private void terminalFallingJump() { }
-
-    private void jumpingJump()
-    {
-        // Reset vertical velocity and add a vertical force to the player.
-        Vector2 v = rb.velocity;
-        v.y = 0f;
-        rb.velocity = v;
-        rb.AddForce(new Vector2(0f, jumpForceInitial));
-
-        state = "jumping";
-        stateTime = Time.frameCount;
-    }
-
-    private void dashingJump()
-    {
-
-    }
-
-    private void crouchingJump()
-    {
-
-    }
-
-
-    private void standingFall()
-    {
-        state = "falling";
-        stateTime = Time.frameCount;
-    }
-
-    private void terminalFall()
-    {
-
-    }
-
-    private void jumpingFall()
-    {
-        state = "falling";
-        stateTime = Time.frameCount;
-    }
-
-    private void dashingFall() { }
-
-    private void crouchingFall() { }
-
-
-    private void standingCrouch()
-    {
-
-    }
-
-    private void fallingCrouch()
-    {
-
-    }
-
-    private void terminalFallingCrouch() { }
-
-    private void jumpingCrouch() { }
-
-    private void dashingCrouch() { }
-
 
     private void standingDash()
     {
-    
+        action = "dashing";
+        actionStart = Time.frameCount;
+        actionDur = dashDur;
     }
 
-    private void fallingDash() { }
-
-    private void terminalFallingDash() { }
-
-    private void jumpingDash()
+    private void attack(string attackType, float attackDur)
     {
-
-    }
-
-    private void dashingDash() { }
-
-    private void crouchingDash()
-    {
-
-    }
-
-    // Attacks are handled in another script. We just pass parameters to inform that script of our state.
-    private void attack(string attackType, float attackTime)
-    {
-        string attackData = File.ReadAllText(Application.dataPath + "/Assets/Text/Player/Attacks" + attackType);
+        string attackData = File.ReadAllText(Application.dataPath + "/Text/Player/Attacks/" + attackType + ".txt");
         GameObject attack = Instantiate(playerAttack, transform);
         attack.GetComponent<Player_Melee>().attackData = attackData;
     }
+    #endregion
 
     // Turns the player around.
     private void turnAround()
@@ -752,5 +328,4 @@ public class Player_Movement : MonoBehaviour
         //theScale.x *= -1;
         //playerBody.localScale = theScale;
     }
-    #endregion
 }

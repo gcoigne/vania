@@ -396,7 +396,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d421213a6cbe5f641b406c79279f63cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerT: {fileID: 4933098578782464, guid: e1ad51503209a6a4b9fe124271a59f63, type: 2}
+  playerT: {fileID: 4960384392068084, guid: e1ad51503209a6a4b9fe124271a59f63, type: 2}
   platformT: {fileID: 4743422012059156, guid: d3be69a9b054238478bf0bb33b850e37, type: 2}
   onewayT: {fileID: 4041842461155252, guid: 64d2dd0f5d9ebf74a87b20dd217b297f, type: 2}
   levelText: {fileID: 0}
