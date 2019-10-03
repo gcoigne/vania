@@ -26,11 +26,15 @@ public class Player_Movement : MonoBehaviour
 
     private bool attackPress = false;           // Whether or not the player is pressing attack.
     private bool attackHold = false;            // Whether or not the player is holding attack.
+
+    private bool interactPress = false;           // Whether or not the player is pressing interact.
+    private bool interactHold = false;            // Whether or not the player is holding interact.
     #endregion
 
     #region Physics variables
-    public bool grounded = false;               // Whether or not the player is in contact with the ground.
+    public bool grounded = false;
     public float gravScale = 1;
+    public bool facingRight = true;
     #endregion
 
     #region State Variables
@@ -44,8 +48,7 @@ public class Player_Movement : MonoBehaviour
     public float moveForce = 256f;              // Amount of force added to move the player left and right.
     public float airForce = 64f;                // Amount of horizontal force added while midair.
     public float maxSpeed = 5f;                 // The fastest the player can travel in the x axis.
-    [HideInInspector]
-    public bool facingRight = true;             // For determining which way the player is currently facing.
+
     [HideInInspector]
     public bool standing = false;               // Whether or not the player is standing.
 
@@ -140,7 +143,6 @@ public class Player_Movement : MonoBehaviour
         groundRight = groundTriggers.Find("Right_Whisker").GetComponent<BoxCollider2D>();
         groundMask = LayerMask.GetMask("Ground");
         #endregion
-        attack("standingBasic",0f);
     }
 
     // Update is called once per frame. It is mainly used for caching user input and rendering.
@@ -153,8 +155,10 @@ public class Player_Movement : MonoBehaviour
         jumpHold = Input.GetButton("Jump");
         //dashPress = Input.GetButtonDown("Dash");
         //dashHold = Input.GetButton("Dash");
-        //attackPress = Input.GetButtonDown("Attack");
-        //attackHold = Input.GetButton("Attack");
+        attackPress = Input.GetButtonDown("Fire1");
+        attackHold = Input.GetButton("Fire1");
+        interactPress = Input.GetButtonDown("Interact");
+        interactHold = Input.GetButtonDown("Interact");
         #endregion
     }
 
@@ -197,7 +201,7 @@ public class Player_Movement : MonoBehaviour
                 }
                 else if (attackPress)
                 {
-                    attack("standingBasic", 16f);
+                    attack();
                 }
                 break;
             #endregion
@@ -309,11 +313,16 @@ public class Player_Movement : MonoBehaviour
         actionDur = dashDur;
     }
 
-    private void attack(string attackType, float attackDur)
+    //private void attack(string attacktype, float attackdur)
+    //{
+    //    string attackdata = file.readalltext(application.datapath + "/text/player/attacks/" + attacktype + ".txt");
+    //    gameobject attack = instantiate(playerattack, transform);
+    //    attack.getcomponent<player_melee>().attackdata = attackdata;
+    //}
+
+    private void attack()
     {
-        string attackData = File.ReadAllText(Application.dataPath + "/Text/Player/Attacks/" + attackType + ".txt");
-        GameObject attack = Instantiate(playerAttack, transform);
-        attack.GetComponent<Player_Melee>().attackData = attackData;
+        GameObject att = Instantiate(playerAttack, transform.position + new Vector3(facingRight ? 1 : -1, 0), Quaternion.identity, transform);
     }
     #endregion
 

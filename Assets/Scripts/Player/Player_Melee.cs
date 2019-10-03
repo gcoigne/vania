@@ -23,6 +23,25 @@ public class Player_Melee : MonoBehaviour
 
     private ContactFilter2D enemiesFilter;      // Contact filter that keeps enemies.
 
+    class Hitbox
+    {
+        public float X, Y, Width, Height;
+        public ContactFilter2D Filter;
+        public Hitbox (float x, float y, float width, float height, ContactFilter2D filter)
+        {
+            X = x;
+            Y = y;
+            Width = width;
+            Height = height;
+            Filter = filter;
+        }
+
+        public Collider2D[] GetHits()
+        {
+            return null;
+        }
+    }
+
 	// Use this for initialization
 	void Start ()
     {
@@ -124,7 +143,7 @@ public class Player_Melee : MonoBehaviour
                 {
                     Destroy(hitbox);
                 }
-                Array.Clear(hitboxes, 0, hitboxes.Length);
+                hitboxes.Clear();
             }
             frameCounter++;
             #endregion
