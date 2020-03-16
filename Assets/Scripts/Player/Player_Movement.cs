@@ -179,6 +179,10 @@ public class Player_Movement : MonoBehaviour
         {
             endAction();
         }
+        if (interactPress)
+        {
+            interact();
+        }
         switch (action)
         {
             #region none
@@ -282,6 +286,30 @@ public class Player_Movement : MonoBehaviour
     {
         action = "none";
         actionStart = Time.frameCount;
+    }
+
+    private bool interact()
+    {
+        //Collider2D[] overlaps = new Collider2D[8];
+        //ContactFilter2D cf = new ContactFilter2D();
+        ////Debug.Log(LayerMask.GetMask("Doors"));
+        //cf.layerMask = new LayerMask();
+        //if (hitbox.OverlapCollider(cf, overlaps) >= 1)
+        //{
+        //    foreach (Collider2D overlap in overlaps)
+        //    {
+        //        Debug.Log(overlap);
+        //        GameObject obj = overlap.gameObject;
+        //        if (obj.tag == "Door")
+        //        {
+        //            if (overlap.gameObject.GetComponent<Door>().Interact())
+        //            {
+        //                return true;
+        //            }
+        //        }
+        //    }
+        //}
+        return true;
     }
 
     private void standingJump()
