@@ -17,11 +17,11 @@ TagManager:
   - 
   - PostProcessing
   - Ground
-  - Walls
+  - Wall
+  - Climbable
+  - Door
+  - Enemy
   - Player
-  - Enemies
-  - Doors
-  - 
   - 
   - 
   - 

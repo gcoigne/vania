@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Camera_Follow : MonoBehaviour {
 
+    public string targetName;
     public float xMargin = 1f;          // Distance in the x axis the target can move before the camera follows.
     public float yMargin = 1f;          // Distance in the y axis the target can move before the camera follows.
     public float maxSpeed = 20f;        // Maximum speed for the camera to move.
@@ -14,18 +15,18 @@ public class Camera_Follow : MonoBehaviour {
     public float minX;              
     public float minY;
 
-    private Vector3 targetVector;       // The location to move toward.
-    private Vector3 destVector;         // The actual location to move to.
+    private Vector2 targetVector;       // The location to move toward.
+    private Vector2 destVector;         // The actual location to move to.
     private GameObject target;          // The GameObject to follow.
     private Transform targetT;          // The target's Transform.
     private Rigidbody2D targetRB;       // The target's Rigidbody2D
-    private Vector3 panVelocity;        // Current camera velocity.
+    private Vector2 panVelocity;        // Current camera velocity.
 
     // Use this for initialization
     void Start ()
     {
         // Attempt to target the player.
-        findTarget("Player");
+        findTarget(targetName);
 
         panVelocity = Vector3.zero;
 	}
@@ -49,25 +50,32 @@ public class Camera_Follow : MonoBehaviour {
         // Attempt to target the player
         if (targetT == null)
         {
-            findTarget("Player");
+            findTarget(targetName);
         }
 
         if (leadTime > 0)
         {
-            print("working");
             // The target vector is where the player would arrive after leadTime seconds with constant velocity.
             Vector2 targetVel = targetRB.velocity;
             float targetX = Mathf.Clamp(targetT.position.x + targetVel.x * leadTime, targetT.position.x - xMargin, targetT.position.x + xMargin);
             float targetY = Mathf.Clamp(targetT.position.y + targetVel.y * leadTime, targetT.position.y - yMargin, targetT.position.y + yMargin);
-            targetVector = new Vector3(targetX, targetY, transform.position.z);
+            targetVector = new Vector2(targetX, targetY);
         }
         else
         {
-            targetVector = new Vector3(targetT.position.x, targetT.position.y, transform.position.z);
+            targetVector = new Vector2(targetT.position.x, targetT.position.y);
         }
 
-        // Move toward the target position.
-        destVector = Vector3.SmoothDamp(transform.position, targetVector, ref panVelocity, smoothTime, maxSpeed);
+        if (smoothTime > 0)
+        {
+            // Move toward the target position.
+            destVector = Vector2.SmoothDamp(transform.position, targetVector, ref panVelocity, smoothTime, maxSpeed);
+        }
+        else
+        {
+            destVector = targetVector;
+        }
+        
 
         // Clamp x and y
         destVector.x = Mathf.Clamp(destVector.x, minX, maxX);
