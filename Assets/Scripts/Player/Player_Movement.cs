@@ -40,7 +40,7 @@ public class Player_Movement : MonoBehaviour
     #endregion
 
     #region Input variables
-    private InputDevice controller;
+    private PlayerInput input;
 
     private float hInput;                       
     private float vInput;                       
@@ -54,8 +54,8 @@ public class Player_Movement : MonoBehaviour
     private bool attackPress = false;  
     private bool attackHold = false;   
 
-    private bool aimPress = false;
-    private bool aimHold = false;
+    private bool altPress = false;
+    private bool altHold = false;
 
     private bool interactPress = false;
     private bool interactHold = false; 
@@ -149,6 +149,8 @@ public class Player_Movement : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         hitbox = GetComponent<BoxCollider2D>();
 
+        input = GetComponent<PlayerInput>();
+
         Transform triggers = transform.Find("Triggers");
         topTrigger = triggers.Find("Top").GetComponent<BoxCollider2D>();
         frontTrigger = triggers.Find("Front").GetComponent<BoxCollider2D>();
@@ -171,28 +173,23 @@ public class Player_Movement : MonoBehaviour
     // Update is called once per frame. It is mainly used for caching user input and rendering.
     void Update()
     {
-        var gamepad = Gamepad.current;
-
         #region Cache the user's input.
-        hInput = Input.GetAxisRaw("Horizontal");
-        vInput = Input.GetAxisRaw("Vertical");
+        hInput = Input.GetAxis("Horizontal");
+        vInput = Input.GetAxis("Vertical");
         jumpPress = Input.GetButtonDown("Jump");
         jumpHold = Input.GetButton("Jump");
         //dashPress = Input.GetButtonDown("Dash");
         //dashHold = Input.GetButton("Dash");
-        attackPress = Input.GetButtonDown("Fire1");
-        attackHold = Input.GetButton("Fire1");
-        aimPress = Input.GetButtonDown("Fire1");
-        aimHold = Input.GetButton("Fire1");
+        attackPress = Input.GetButtonDown("Fire");
+        attackHold = Input.GetButton("Fire");
+        altPress = Input.GetButtonDown("Alt");
+        altHold = Input.GetButton("Alt");
         interactPress = Input.GetButtonDown("Interact");
         interactHold = Input.GetButtonDown("Interact");
         #endregion
 
         #region State changes
-        //if ((action != "none") && (actionStart + actionDur <= Time.frameCount))
-        //{
-        //    endAction();
-        //}
+
         //if (interactPress)
         //{
         //    interact();
@@ -212,6 +209,10 @@ public class Player_Movement : MonoBehaviour
                 {
                     attack();
                 }
+                else if (altHold)
+                {
+                    idleToAlt();
+                }
                 else if (topFrontClimbable && bottomFrontClimbable)
                 {
                     //idleToClimb();
@@ -222,7 +223,7 @@ public class Player_Movement : MonoBehaviour
                 }
                 break;
             #endregion
-
+        
             #region run
             case "run":
                 if (jumpPress)
@@ -236,6 +237,10 @@ public class Player_Movement : MonoBehaviour
                 {
                     attack();
                 }
+                else if (altHold)
+                {
+                    runToAlt();
+                }
                 else if (topFrontClimbable && bottomFrontClimbable)
                 {
                     //runToClimb();
@@ -246,7 +251,7 @@ public class Player_Movement : MonoBehaviour
                 }
                 break;
             #endregion
-
+        
             #region fall
             case "fall":
                 if (grounded)
@@ -260,6 +265,10 @@ public class Player_Movement : MonoBehaviour
                         fallToRun();
                     }
                 }
+                if (attackPress)
+                {
+                    attack();
+                }
                 else
                 {
                     if (topFrontCheck == "climbable" && bottomFrontCheck == "climbable")
@@ -269,14 +278,15 @@ public class Player_Movement : MonoBehaviour
                 }
                 break;
             #endregion
-
+        
             #region jump
             case "jump":
                 if (topFrontCheck == "climbable" && bottomFrontCheck == "climbable")
                 {
                     //jumpToClimb();
+                    break;
                 }
-                else if (jumpHold && stateTimer + jumpDur > Time.frameCount)
+                if (jumpHold && stateTimer + jumpDur > Time.frameCount)
                 {
                     GetComponent<Rigidbody2D>().AddForce(new Vector2(0f, jumpForceAdded));
                 }
@@ -284,11 +294,17 @@ public class Player_Movement : MonoBehaviour
                 {
                     jumpToFall();
                 }
+                if (attackPress)
+                {
+                    attack();
+                }
                 break;
             #endregion
 
+            #region grip
             case "grip":
                 break;
+            #endregion
 
             #region climb
             case "climb":
@@ -300,62 +316,176 @@ public class Player_Movement : MonoBehaviour
                 }
                 break;
             #endregion
-
-            #region aim
-            case "aim":
-                if (hInput > 0.25)
+        
+            #region alt
+            case "alt":
+                if (altHold)
                 {
-                    if (vInput > 0.25)
+                    if (facingRight)
                     {
-                        if (aimDirection != 9)
+                        if (hInput < -0.25)
                         {
-                            aimDirection = 9;
-                            anim.SetTrigger("9");
+                            turnAround(); 
+                            if (vInput > 0.25)
+                            {
+                                if (aimDirection != 9)
+                                {
+                                    aimDirection = 9;
+                                    anim.SetTrigger("9");
+                                }
+                            }
+                            else if (vInput < -0.25)
+                            {
+                                if (aimDirection != 3)
+                                {
+                                    aimDirection = 3;
+                                    anim.SetTrigger("3");
+                                }
+                            }
+                            else
+                            {
+                                if (aimDirection != 6)
+                                {
+                                    aimDirection = 6;
+                                    anim.SetTrigger("6");
+                                }
+                            }
+                        }
+                        else if (hInput > 0.25)
+                        {
+                            if (vInput > 0.25)
+                            {
+                                if (aimDirection != 9)
+                                {
+                                    aimDirection = 9;
+                                    anim.SetTrigger("9");
+                                }
+                            }
+                            else if (vInput < -0.25)
+                            {
+                                if (aimDirection != 3)
+                                {
+                                    aimDirection = 3;
+                                    anim.SetTrigger("3");
+                                }
+                            }
+                            else
+                            {
+                                if (aimDirection != 6)
+                                {
+                                    aimDirection = 6;
+                                    anim.SetTrigger("6");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (vInput > 0.25)
+                            {
+                                if (aimDirection != 8)
+                                {
+                                    aimDirection = 8;
+                                    anim.SetTrigger("8");
+                                }
+                            }
+                            else if (vInput < -0.25)
+                            {
+                                if (aimDirection != 2)
+                                {
+                                    aimDirection = 2;
+                                    anim.SetTrigger("2");
+                                }
+                            }
                         }
                     }
-                    else if (vInput < -0.25)
-                    {
-                        if (aimDirection != 3)
-                        {
-                            aimDirection = 3;
-                            anim.SetTrigger("3");
-                        }
-                    }
+
                     else
                     {
-                        if (aimDirection != 6)
+                        if (hInput > 0.25)
                         {
-                            aimDirection = 6;
-                            anim.SetTrigger("6");
+                            turnAround();
+                            if (vInput > 0.25)
+                            {
+                                if (aimDirection != 9)
+                                {
+                                    aimDirection = 9;
+                                    anim.SetTrigger("9");
+                                }
+                            }
+                            else if (vInput < -0.25)
+                            {
+                                if (aimDirection != 3)
+                                {
+                                    aimDirection = 3;
+                                    anim.SetTrigger("3");
+                                }
+                            }
+                            else
+                            {
+                                if (aimDirection != 6)
+                                {
+                                    aimDirection = 6;
+                                    anim.SetTrigger("6");
+                                }
+                            }
+                        }
+                        else if (hInput < -0.25)
+                        {
+                            if (vInput > 0.25)
+                            {
+                                if (aimDirection != 9)
+                                {
+                                    aimDirection = 9;
+                                    anim.SetTrigger("9");
+                                }
+                            }
+                            else if (vInput < -0.25)
+                            {
+                                if (aimDirection != 3)
+                                {
+                                    aimDirection = 3;
+                                    anim.SetTrigger("3");
+                                }
+                            }
+                            else
+                            {
+                                if (aimDirection != 6)
+                                {
+                                    aimDirection = 6;
+                                    anim.SetTrigger("6");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (vInput > 0.25)
+                            {
+                                if (aimDirection != 8)
+                                {
+                                    aimDirection = 8;
+                                    anim.SetTrigger("8");
+                                }
+                            }
+                            else if (vInput < -0.25)
+                            {
+                                if (aimDirection != 2)
+                                {
+                                    aimDirection = 2;
+                                    anim.SetTrigger("2");
+                                }
+                            }
                         }
                     }
-                }
-                else if (hInput < -0.25)
-                {
-                    //turnAround(); no
+                    
+                    if (attackPress)
+                    {
+                        attack();
+                    }
                 }
                 else
                 {
-                    if (vInput > 0.25) 
-                    {
-                        if (aimDirection != 8)
-                        {
-                            aimDirection = 8;
-                            anim.SetTrigger("8");
-                        }
-                    }
-                    else if (vInput < -0.25)
-                    {
-                        if (aimDirection != 2)
-                        {
-                            aimDirection = 2;
-                            anim.SetTrigger("2");
-                        }
-                    }
-                }
-                if (attackPress)
-                {
-                    attack();
+                    aimDirection = 6;
+                    altToIdle();
                 }
                 break;
                 #endregion
@@ -378,21 +508,6 @@ public class Player_Movement : MonoBehaviour
         bottomFrontCheck = checkTrigger(bottomFrontTrigger);
         bottomBackCheck = checkTrigger(bottomBackTrigger);
 
-        if (facingRight)
-        {
-            if (vel.x < 0)
-            {
-                turnAround();
-            }
-        }
-        else
-        {
-            if (vel.x > 0)
-            {
-                turnAround();
-            }
-        }
-
         grounded = Physics2D.IsTouchingLayers(bottomTrigger, groundMask);
         if (grounded)
         {
@@ -410,8 +525,8 @@ public class Player_Movement : MonoBehaviour
                     //rb.AddForce(Vector2.right * (moveForce / 16) * Mathf.Sign(-vel.x));
 
                 // If the player's horizontal velocity is less than max speed add force to the player based on input.
-                //else 
                 if (Mathf.Sign(hInput) * vel.x < maxSpeed)
+                {
                     if (grounded)
                     {
                         rb.AddForce(Vector2.right * hInput * moveForce);
@@ -420,6 +535,7 @@ public class Player_Movement : MonoBehaviour
                     {
                         rb.AddForce(Vector2.right * hInput * airForce);
                     }
+                }
 
                 // If the player's horizontal velocity is greater than the maxSpeed set it equal to the maxSpeed.
                 if (Mathf.Abs(vel.x) > maxSpeed)
@@ -541,6 +657,20 @@ public class Player_Movement : MonoBehaviour
                 break;
             #endregion
         }
+        if (facingRight)
+        {
+            if (vel.x < 0)
+            {
+                turnAround();
+            }
+        }
+        else
+        {
+            if (vel.x > 0)
+            {
+                turnAround();
+            }
+        }
         #endregion
 
         #region Animation
@@ -621,6 +751,13 @@ public class Player_Movement : MonoBehaviour
     {
         state = "idle";
         stateTimer = Time.frameCount;
+        anim.SetTrigger("Idle");
+    }
+    private void altToIdle()
+    {
+        state = "idle";
+        stateTimer = Time.frameCount;
+        anim.SetTrigger("6");
         anim.SetTrigger("Idle");
     }
     #endregion
@@ -804,6 +941,8 @@ public class Player_Movement : MonoBehaviour
     
     private void fallToClimb()
     {
+        transform.rotation = Quaternion.Euler(0f, 0f, 90f);
+
         rb.gravityScale = 0;
         rb.velocity = Vector2.zero;
 
@@ -830,42 +969,52 @@ public class Player_Movement : MonoBehaviour
     }
     #endregion
 
+    #region to alt
+    private void idleToAlt()
+    {
+        state = "alt";
+        stateTimer = Time.frameCount;
+        anim.SetTrigger("Alt");
+    }
+
+    private void runToAlt()
+    {
+        state = "alt";
+        stateTimer = Time.frameCount;
+        anim.SetTrigger("Alt");
+    }
+    #endregion
+
     private void attack()
     {
+        float ang = 0f;
         GameObject att  = nullObject;
         Dart dartScript;
         switch (aimDirection)
         {
             case 2:
-                att = Instantiate(dart, gimpGunTip.position , Quaternion.Euler(0f, 0f, -90f));
-                dartScript = att.GetComponent<Dart>();
-                dartScript.angle = -90f;
+                ang = -90f;
                 break;
 
             case 3:
-                att = Instantiate(dartDiag, gimpGunTip.position, Quaternion.Euler(0f, 0f, -90f));
-                dartScript = att.GetComponent<Dart>();
-                dartScript.angle = -45f;
+                ang = facingRight ? -45f : -135f;
                 break;
 
             case 6:
-                att = Instantiate(dart, gimpGunTip.position, Quaternion.identity);
-                dartScript = att.GetComponent<Dart>();
-                dartScript.angle = 0f;
+                ang = facingRight ? 0f : 180f;
                 break;
 
             case 8:
-                att = Instantiate(dart, gimpGunTip.position, Quaternion.Euler(0f, 0f, 90f));
-                dartScript = att.GetComponent<Dart>();
-                dartScript.angle = 90f;
+                ang = 90f;
                 break;
 
             case 9:
-                att = Instantiate(dartDiag, gimpGunTip.position, Quaternion.identity);
-                dartScript = att.GetComponent<Dart>();
-                dartScript.angle = 45f;
+                ang = facingRight ? 45f : 135f;
                 break;
         }
+        att = Instantiate(dart, gimpGunTip.position, Quaternion.Euler(0f, 0f, ang));
+        dartScript = att.GetComponent<Dart>();
+        dartScript.angle = ang;
     }
     #endregion
 
