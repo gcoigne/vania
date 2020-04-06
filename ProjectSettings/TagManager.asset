@@ -17,8 +17,8 @@ TagManager:
   - 
   - PostProcessing
   - Ground
-  - Wall
-  - Climbable
+  - Smooth
+  - Rough
   - Door
   - Enemy
   - Player
