@@ -4,541 +4,480 @@ using UnityEngine;
 
 public class PixelPhysics : MonoBehaviour
 {
-    public float ppu;
-    private float upp;
-    public int buf = 64;
+    //TODO IMPORTANT Make sure objects are only added or removed before or after physics frames. Objects should only be marked for deletion within a frame.
 
-    public GameObject[] staticGameObjects;
-    public GameObject[] dynamicGameObjects;
-    public StaticObject[] staticObjects;
-    public DynamicObject[] dynamicObjects;
+    public float unitToPixel;
+    private float pixelToUnit;
+
+    public List<StaticObject> staticObjects = new List<StaticObject>();
+    public List<DynamicObject> dynamicObjects = new List<DynamicObject>();
     
     private StaticObject nullStObj;
     private DynamicObject nullDObj;
 
-    public class StaticObject
-    {
-        public int buf;
-        public float upp;
-        public float ppu;
+    //public class StaticObject
+    //{
+    //    public int index;
+    //    public string type;
+    //    public Vector2 size;
+    //    public Vector2 pos;
+    //
+    //    public StaticObject(int i, string t, Vector2 s, Vector2 p)
+    //    {
+    //        index = i;
+    //        type = t;
+    //        size = s;
+    //        pos = p;
+    //    }
+    //}
 
-        public int index;
-        public string type;
+    //public class StaticTri : StaticObject
+    //{
+    //    public float hypAng;
+    //
+    //    public StaticTri(int i, string t, float a, Vector2 s, Vector2 p) : base(i, t, s, p)
+    //    {
+    //        hypAng = a;
+    //    }
+    //}
 
-        public Vector2 size;
-        public Vector2 pos;
-
-        public StaticObject(int i, string t, Vector2 s, Vector2 p)
-        {
-            index = i;
-            type = t;
-            size = s;
-            pos = p;
-        }
-    }
-
-    public class DynamicObject
-    {
-        public int buf;
-
-        public int index;
-        public string type;
-        public string[] overlapTypes;
-        public string[] collisionTypes;
-
-        public Vector2 size;
-        public Vector2 pos;
-        public Vector2 delta;
-
-        public StaticObject[] overlapsStatic;
-        public StaticObject[] colsLeftStatic;
-        public StaticObject[] colsRightStatic;
-        public StaticObject[] colsDownStatic;
-        public StaticObject[] colsUpStatic;
-
-        public DynamicObject[] overlapsDynamic;
-        public DynamicObject[] colsLeftDynamic;
-        public DynamicObject[] colsRightDynamic;
-        public DynamicObject[] colsDownDynamic;
-        public DynamicObject[] colsUpDynamic;
-
-        public DynamicObject(int i, string t, string[] o, string[] c, Vector2 s, Vector2 p, Vector2 d)
-        {
-            buf = 64;
-
-            index = i;
-            type = t;
-            overlapTypes = o;
-            collisionTypes = c;
-            size = s;
-            pos = p;
-            delta = d;
-
-            overlapsStatic = new StaticObject[buf];
-            colsLeftStatic = new StaticObject[buf];
-            colsRightStatic = new StaticObject[buf];
-            colsDownStatic = new StaticObject[buf];
-            colsUpStatic = new StaticObject[buf];
-
-            overlapsDynamic = new DynamicObject[buf];
-            colsLeftDynamic = new DynamicObject[buf];
-            colsRightDynamic = new DynamicObject[buf];
-            colsDownDynamic = new DynamicObject[buf];
-            colsUpDynamic = new DynamicObject[buf];
-        }
-    }
+    //public class DynamicObject
+    //{
+    //    public int index;
+    //    public string type;
+    //    public List<string> overlapTypes;
+    //    public List<string> collisionTypes;
+    //
+    //    public float mass;
+    //    public Vector2 size;
+    //    public Vector2 pos;
+    //    public Vector2 delta;
+    //
+    //    public List<StaticObject> staticOverlaps;
+    //    public List<StaticObject> staticColsLeft;
+    //    public List<StaticObject> staticColsRight;
+    //    public List<StaticObject> staticColsDown;
+    //    public List<StaticObject> staticColsUp;
+    //
+    //    public List<DynamicObject> dynamicOverlaps;
+    //    public List<DynamicObject> dynamicColsLeft;
+    //    public List<DynamicObject> dynamicColsRight;
+    //    public List<DynamicObject> dynamicColsDown;
+    //    public List<DynamicObject> dynamicColsUp;
+    //
+    //    public DynamicObject(int i, string t, List<string> o, List<string> c, float m, Vector2 s, Vector2 p, Vector2 d)
+    //    {
+    //        index = i;
+    //        type = t;
+    //        overlapTypes = o;
+    //        collisionTypes = c;
+    //
+    //        mass = m;
+    //        size = s;
+    //        pos = p;
+    //        delta = d;
+    //
+    //        staticOverlaps = new List<StaticObject>();
+    //        staticColsLeft = new List<StaticObject>();
+    //        staticColsRight = new List<StaticObject>();
+    //        staticColsDown = new List<StaticObject>();
+    //        staticColsUp = new List<StaticObject>();
+    //
+    //        dynamicOverlaps = new List<DynamicObject>();
+    //        dynamicColsLeft = new List<DynamicObject>();
+    //        dynamicColsRight = new List<DynamicObject>();
+    //        dynamicColsDown = new List<DynamicObject>();
+    //        dynamicColsUp = new List<DynamicObject>();
+    //    }
+    //
+    //    public void moveX(float distance)
+    //    {
+    //        pos.x += distance;
+    //        delta.Set(delta.x - distance, delta.y);
+    //    }
+    //
+    //    public void moveY(float distance)
+    //    {
+    //        pos.y += distance;
+    //        delta.Set(delta.x - distance, delta.y);
+    //    }
+    //}
 
     // Start is called before the first frame update
     void Start()
     {
-        upp = 1 / ppu;
-
-        staticObjects = new StaticObject[buf];
-        int i = 0;
-        foreach (GameObject gObj in staticGameObjects)
-        {
-            if (gObj == null)
-            {
-                break;
-            }
-
-            PixelStatic pixStat = gObj.GetComponent<PixelStatic>();
-            string t = pixStat.type;
-            Vector2 s = pixStat.size;
-            Vector2 p = gObj.transform.position;
-
-            StaticObject stObj = new StaticObject(i, t, s, p);
-            staticObjects[i] = stObj;
-        }
-
-        dynamicObjects = new DynamicObject[buf];
-        i = 0;
-        foreach (GameObject gObj in dynamicGameObjects)
-        {
-            if (gObj == null)
-            {
-                break;
-            }
-
-            PixelMovement pixMov = gObj.GetComponent<PixelMovement>();
-            string t = pixMov.type;
-            string[] o = pixMov.overlapTypes;
-            string[] c = pixMov.collisionTypes;
-            Vector2 s = pixMov.size;
-            Vector2 p = gObj.transform.position;
-            Vector2 d = pixMov.movement;
-
-            DynamicObject dObj = new DynamicObject(i, t, o, c, s, p, d);
-            dynamicObjects[i] = dObj;
-        }
-
-        nullStObj = new StaticObject(-1, "null", Vector2.zero, Vector2.zero);
-        nullDObj = new DynamicObject(-1, "null", new string[buf], new string[buf], Vector2.zero, Vector2.zero, Vector2.zero);
+        pixelToUnit = 1 / unitToPixel;
     }
 
     // Update is called once per frame
     void Update()
     {
-        Vector2[] deltas = new Vector2[buf];
-        DynamicObject cur;
+    }
 
-        for (int i = 0; i < buf; i++)
-        {
-            if (dynamicObjects[i] is null)
-            {
-                break;
-            }
-            deltas[i] = dynamicObjects[i].delta;
-        }
+    private void LateUpdate()
+    {
+        Setup();
+        PixelMarch();
+        Cleanup();
+    }
 
-        float maxX = 0;
-        float maxY = 0;
-        int maxXI = 0;
-        int maxYI = 0;
-        for (int i = 0; i < buf; i++)
+    private void Setup()
+    {
+        for (int i = 0; i < dynamicObjects.Count; i++)
         {
-            float absX = Mathf.Abs(deltas[i].x);
-            float absY = Mathf.Abs(deltas[i].y);
-            if (absX > maxX)
-            {
-                maxX = absX;
-                maxXI = i;
-            }
-            if (absY > maxY)
-            {
-                maxY = absY;
-                maxYI = i;
-            }
-        }
+            DynamicObject dObj = dynamicObjects[i];
 
-        if (maxX > maxY)
-        {
-            cur = dynamicObjects[maxXI];
-            float dx = deltas[maxXI].x;
-            if (dx < 0)
-            {
-                cur.colsLeftStatic = checkColsLeftStatic(cur);
-                cur.colsLeftDynamic = checkColsLeftDynamic(cur);
+            dObj.transform.position = dObj.pos - dObj.offset;
+            dObj.vel += dObj.grav * Time.deltaTime;
+            float newX = Mathf.Clamp(dObj.vel.x, -dObj.maxSpeedX, dObj.maxSpeedX);
+            float newY = Mathf.Clamp(dObj.vel.y, -dObj.maxSpeedY, dObj.maxSpeedY);
+            dObj.vel.Set(newX, newY);
+            dObj.delta += dObj.vel * Time.deltaTime;
+            dObj.collisions.Clear();
 
-                if (cur.colsLeftStatic[0] != null && cur.colsLeftDynamic[0] != null);
-            }
-            else if (dx > 0)
-            {
-                cur.colsRightStatic = checkColsRightStatic(cur);
-                cur.colsRightDynamic = checkColsRightDynamic(cur);
-            }
-        }
-        else
-        {
-            cur = dynamicObjects[maxYI];
-            float dy = deltas[maxYI].x;
-            if (dy < 0)
-            {
-                cur.colsDownStatic = checkColsDownStatic(cur);
-                cur.colsDownDynamic = checkColsDownDynamic(cur);
-            }
-            else if (dy > 0)
-            {
-                cur.colsUpStatic = checkColsUpStatic(cur);
-                cur.colsUpDynamic = checkColsUpDynamic(cur);
-            }
+            dObj.projectedPos = dObj.pos + dObj.delta;
+            float minX = Mathf.Min(dObj.pos.x, dObj.projectedPos.x) - (dObj.size.x / 2);
+            float maxX = Mathf.Max(dObj.pos.x, dObj.projectedPos.x) + (dObj.size.x / 2);
+            float minY = Mathf.Min(dObj.pos.y, dObj.projectedPos.y) - (dObj.size.y / 2);
+            float maxY = Mathf.Max(dObj.pos.y, dObj.projectedPos.y) + (dObj.size.y / 2);
+            Vector2 bl = new Vector2(minX, minY);
+            Vector2 tr = new Vector2(maxX, maxY);
+            dObj.nearbyStatic = checkBoxStatic(bl, tr, staticObjects);
         }
     }
 
-    private StaticObject[] checkBoxStatic(string t, Vector2 s, Vector2 p)               //Returns all type t StaticObjects overlapping the box.
+    private void PixelMarch()
     {
-        StaticObject[] ret = new StaticObject[buf];
-        int i = 0;
-
-        foreach (StaticObject stObj in staticObjects)
+        bool march = true;
+        //Loop through all dynamic objects, finding the one with the largest x or y delta. Move that one in the specified direction and trigger a collision if necessary.
+        while (march)
         {
-            if (stObj.type == t)
+            DynamicObject cur;
+            Vector2 curDelta;
+            float maxX = 0;
+            float maxY = 0;
+            int maxXI = 0;
+            int maxYI = 0;
+            for (int i = 0; i < dynamicObjects.Count; i++)
             {
-                Vector2 stObjS = stObj.size;
-                Vector2 stObjP = stObj.pos;
-                if ((p.x - s.x) > (stObjP.x + stObjS.x) || (p.x + s.x) < (stObjP.x - stObjS.x) || (p.y - s.y) > (stObjP.y + stObjS.y) || (p.y + s.y) < (stObjP.y - stObjS.y))
+                curDelta = dynamicObjects[i].delta;
+                float absX = Mathf.Abs(curDelta.x);
+                float absY = Mathf.Abs(curDelta.y);
+                if (absX > maxX)
                 {
-                    continue;
+                    maxX = absX;
+                    maxXI = i;
                 }
-                ret[i] = stObj;
-                i++;
-            }
-        }
-        return ret;
-    }
-
-    private DynamicObject[] checkBoxDynamic(string t, Vector2 s, Vector2 p)             //Returns all type t ShysicsObjects overlapping the box.
-    {
-        DynamicObject[] ret = new DynamicObject[buf];
-        int i = 0;
-
-        foreach (DynamicObject dObj in dynamicObjects)
-        {
-            if (dObj.type == t)
-            {
-                Vector2 dObjS = dObj.size;
-                Vector2 dObjP = dObj.pos;
-                if ((p.x - s.x) > (dObjP.x + dObjS.x) || (p.x + s.x) < (dObjP.x - dObjS.x) || (p.y - s.y) > (dObjP.y + dObjS.y) || (p.y + s.y) < (dObjP.y - dObjS.y))
+                if (absY > maxY)
                 {
-                    continue;
+                    maxY = absY;
+                    maxYI = i;
                 }
-                ret[i] = dObj;
-                i++;
             }
-        }
-        return ret;
-    }
 
-    private StaticObject[] checkOverlapStatic(DynamicObject dObj)                      //Returns all matching StaticObjects overlapping dObj.
-    {
-        StaticObject[] overlaps = new StaticObject[buf];
-
-        Vector2 s = dObj.size;
-        Vector2 p = dObj.pos;
-
-        int i = 0;
-        foreach (string oT in dObj.overlapTypes)
-        {
-            foreach (StaticObject other in checkBoxStatic(oT, s, p))
+            if ((maxX <= pixelToUnit / 2) && (maxY <= pixelToUnit / 2))
             {
-                overlaps[i] = other;
-                i++;
+                march = false;
             }
-        }
-        //dObj.overlapsStatic = overlaps;
-        return overlaps;
-    }
-
-    private DynamicObject[] checkOverlapDynamic(DynamicObject dObj)                    //Returns all matching DynamicObjects overlapping dObj.
-    {
-        DynamicObject[] ret = new DynamicObject[buf];
-
-        Vector2 s = dObj.size;
-        Vector2 p = dObj.pos;
-
-        int i = 0;
-        foreach (string oT in dObj.overlapTypes)
-        {
-            foreach (DynamicObject other in checkBoxDynamic(oT, s, p))
+            else if (maxX >= maxY)
             {
-                ret[i] = other;
-                i++;
-            }
-        }
-        return ret;
-    }
-
-    private StaticObject[] checkColsLeftStatic(DynamicObject dObj)                      //Returns all matching StaticObjects one pixel to the left of dObj
-    {
-
-        StaticObject[] ret = new StaticObject[buf];
-
-        Vector2 s = new Vector2(upp, dObj.size.y);
-        Vector2 p = new Vector2(dObj.pos.x - (dObj.size.x / 2f), dObj.pos.y);
-
-        int i = 0;
-        foreach (string cT in dObj.collisionTypes)
-        {
-            foreach (StaticObject other in checkBoxStatic(cT, s, p))
-            {
-                ret[i] = other;
-                i++;
-            }
-        }
-        return ret;
-    }               
-
-    private StaticObject[] checkColsRightStatic(DynamicObject dObj)
-    {
-
-        StaticObject[] ret = new StaticObject[buf];
-
-        string t = dObj.type;
-        Vector2 s = new Vector2(upp, dObj.size.y);
-        Vector2 p = new Vector2(dObj.pos.x + (dObj.size.x / 2f), dObj.pos.y);
-
-        int i = 0;
-        foreach (string cT in dObj.collisionTypes)
-        {
-            foreach (StaticObject other in checkBoxStatic(cT, s, p))
-            {
-                ret[i] = other;
-                i++;
-            }
-        }
-        return ret;
-    }
-
-    private StaticObject[] checkColsDownStatic(DynamicObject dObj)
-    {
-
-        StaticObject[] ret = new StaticObject[buf];
-
-        string t = dObj.type;
-        Vector2 s = new Vector2(dObj.size.x, upp);
-        Vector2 p = new Vector2(dObj.pos.x, dObj.pos.y - (dObj.size.y / 2f));
-
-        int i = 0;
-        foreach (string cT in dObj.collisionTypes)
-        {
-            foreach (StaticObject other in checkBoxStatic(cT, s, p))
-            {
-                ret[i] = other;
-                i++;
-            }
-        }
-        return ret;
-    }
-
-    private StaticObject[] checkColsUpStatic(DynamicObject dObj)
-    {
-
-        StaticObject[] ret = new StaticObject[buf];
-
-        string t = dObj.type;
-        Vector2 s = new Vector2(dObj.size.x, upp);
-        Vector2 p = new Vector2(dObj.pos.x, dObj.pos.y + (dObj.size.y / 2f));
-
-        int i = 0;
-        foreach (string cT in dObj.collisionTypes)
-        {
-            foreach (StaticObject other in checkBoxStatic(cT, s, p))
-            {
-                ret[i] = other;
-                i++;
-            }
-        }
-        return ret;
-    }
-
-    private DynamicObject[] checkColsLeftDynamic(DynamicObject dObj)                    //Returns all matching DynamicObjects one pixel to the left of dObj
-    {
-
-        DynamicObject[] ret = new DynamicObject[buf];
-
-        Vector2 s = new Vector2(upp, dObj.size.y);
-        Vector2 p = new Vector2(dObj.pos.x - (dObj.size.x / 2f), dObj.pos.y);
-
-        int i = 0;
-        foreach (string cT in dObj.collisionTypes)
-        {
-            foreach (DynamicObject other in checkBoxDynamic(cT, s, p))
-            {
-                ret[i] = other;
-                i++;
-            }
-        }
-        return ret;
-    }
-
-    private DynamicObject[] checkColsRightDynamic(DynamicObject dObj)
-    {
-
-        DynamicObject[] ret = new DynamicObject[buf];
-
-        string t = dObj.type;
-        Vector2 s = new Vector2(upp, dObj.size.y);
-        Vector2 p = new Vector2(dObj.pos.x + (dObj.size.x / 2f), dObj.pos.y);
-
-        int i = 0;
-        foreach (string cT in dObj.collisionTypes)
-        {
-            foreach (DynamicObject other in checkBoxDynamic(cT, s, p))
-            {
-                ret[i] = other;
-                i++;
-            }
-        }
-        return ret;
-    }
-
-    private DynamicObject[] checkColsDownDynamic(DynamicObject dObj)
-    {
-
-        DynamicObject[] ret = new DynamicObject[buf];
-
-        string t = dObj.type;
-        Vector2 s = new Vector2(dObj.size.x, upp);
-        Vector2 p = new Vector2(dObj.pos.x, dObj.pos.y - (dObj.size.y / 2f));
-
-        int i = 0;
-        foreach (string cT in dObj.collisionTypes)
-        {
-            foreach (DynamicObject other in checkBoxDynamic(cT, s, p))
-            {
-                ret[i] = other;
-                i++;
-            }
-        }
-        return ret;
-    }
-
-    private DynamicObject[] checkColsUpDynamic(DynamicObject dObj)
-    {
-
-        DynamicObject[] ret = new DynamicObject[buf];
-
-        string t = dObj.type;
-        Vector2 s = new Vector2(dObj.size.x, upp);
-        Vector2 p = new Vector2(dObj.pos.x, dObj.pos.y + (dObj.size.y / 2f));
-
-        int i = 0;
-        foreach (string cT in dObj.collisionTypes)
-        {
-            foreach (DynamicObject other in checkBoxDynamic(cT, s, p))
-            {
-                ret[i] = other;
-                i++;
-            }
-        }
-        return ret;
-    }
-
-    private void ResetDynamicObjects()
-    {
-        //
-    }
-
-    private void pixelMarch(Vector2 mov)            //Moves the player pixel by pixel toward vel, stopping on collision. Returns remainder of vel.
-    {
-        float movX = mov.x;
-        float movY = mov.y;
-
-        float targetX = transform.position.x;
-        float targetY = transform.position.y;
-
-        while (Mathf.Abs(movX) > upp / 2 || Mathf.Abs(movY) > upp / 2)
-        {
-            if (Mathf.Abs(movX) >= Mathf.Abs(movY))
-            {
-                if (movX < 0)
+                cur = dynamicObjects[maxXI];
+                if (cur.delta.x < 0)
                 {
-                    if (checkX(targetX - borderX))
+                    Vector2 bL = cur.pos + new Vector2(-(cur.size.x / 2f) - pixelToUnit, -cur.size.y / 2f);
+                    Vector2 tR = cur.pos + new Vector2(-cur.size.x / 2f, cur.size.y / 2f);
+                    foreach (StaticObject other in checkBoxStatic(bL, tR, cur.nearbyStatic))
                     {
-                        movX += upp;
-                        targetX -= upp;
+                        staticCollision(cur, other, 180);
                     }
-                    else
+                    foreach (DynamicObject other in checkBoxDynamic(bL, tR, dynamicObjects))
                     {
-                        //remVelX = movX;
-                        movX = 0;
+                        if (cur.id != other.id)
+                        {
+                            dynamicCollision(cur, other, 180);
+                        }
                     }
                 }
-                else
+                else if (cur.delta.x > 0)
                 {
-                    if (checkX(targetX + borderX))
+                    Vector2 bL = cur.pos + new Vector2(cur.size.x / 2f, -cur.size.y / 2f);
+                    Vector2 tR = cur.pos + new Vector2((cur.size.x / 2f) + pixelToUnit, cur.size.y / 2f);
+                    foreach (StaticObject other in checkBoxStatic(bL, tR, cur.nearbyStatic))
                     {
-                        movX -= upp;
-                        targetX += upp;
+                        staticCollision(cur, other, 0);
                     }
-                    else
+                    foreach (DynamicObject other in checkBoxDynamic(bL, tR, dynamicObjects))
                     {
-                        //remVelX = movX;
-                        movX = 0;
+                        if (cur.id != other.id)
+                        {
+                            dynamicCollision(cur, other, 0);
+                        }
                     }
+                }
+
+                if (cur.delta.x < -pixelToUnit / 2)
+                {
+                    cur.moveX(-pixelToUnit);
+                }
+
+                else if (cur.delta.x > pixelToUnit / 2)
+                {
+                    cur.moveX(pixelToUnit);
                 }
             }
             else
             {
-                if (movY < 0)
+                cur = dynamicObjects[maxYI];
+                if (cur.delta.y < 0)
                 {
-                    if (checkY(targetY - borderY))
+                    Vector2 bL = cur.pos + new Vector2(-cur.size.x / 2f, -(cur.size.y / 2f) - pixelToUnit);
+                    Vector2 tR = cur.pos + new Vector2(cur.size.x / 2f, -(cur.size.y / 2f));
+                    foreach (StaticObject other in checkBoxStatic(bL, tR, cur.nearbyStatic))
                     {
-                        movY += upp;
-                        targetY -= upp;
+                        staticCollision(cur, other, 270);
                     }
-                    else
+                    foreach (DynamicObject other in checkBoxDynamic(bL, tR, dynamicObjects))
                     {
-                        //remVelY = movY;
-                        movY = 0;
+                        if (cur.id != other.id)
+                        {
+                            dynamicCollision(cur, other, 270);
+                        }
                     }
                 }
-                else
+                else if (cur.delta.y > 0)
                 {
-                    if (checkY(targetY + borderY))
+                    Vector2 bL = cur.pos + new Vector2(-cur.size.x / 2f, cur.size.y / 2f);
+                    Vector2 tR = cur.pos + new Vector2(cur.size.x / 2f, (cur.size.y / 2f) + pixelToUnit);
+                    foreach (StaticObject other in checkBoxStatic(bL, tR, cur.nearbyStatic))
                     {
-                        movY -= upp;
-                        targetY += upp;
+                        staticCollision(cur, other, 90);
                     }
-                    else
+                    foreach (DynamicObject other in checkBoxDynamic(bL, tR, dynamicObjects))
                     {
-                        //remVelY = movY;
-                        movY = 0;
+                        if (cur.id != other.id)
+                        {
+                            dynamicCollision(cur, other, 90);
+                        }
                     }
+                }
+
+                if (cur.delta.y < -pixelToUnit / 2)
+                {
+                    cur.moveY(-pixelToUnit);
+                }
+
+                else if (cur.delta.y > pixelToUnit / 2)
+                {
+                    cur.moveY(pixelToUnit);
                 }
             }
         }
 
-        target = new Vector2(targetX, targetY);
-        transform.position = target;
-
-        movement = new Vector2(movX, movY);
+        //Do one more set of collision checks for the leftover delta.
+        foreach (DynamicObject cur in dynamicObjects)
+        {
+            if (cur.delta.x < 0)
+            {
+                Vector2 bL = cur.pos + new Vector2(-(cur.size.x / 2f) - pixelToUnit, -cur.size.y / 2f);
+                Vector2 tR = cur.pos + new Vector2(-cur.size.x / 2f, cur.size.y / 2f);
+                foreach (StaticObject other in checkBoxStatic(bL, tR, cur.nearbyStatic))
+                {
+                    staticCollision(cur, other, 180);
+                }
+                foreach (DynamicObject other in checkBoxDynamic(bL, tR, dynamicObjects))
+                {
+                    if (cur.id != other.id)
+                    {
+                        dynamicCollision(cur, other, 180);
+                    }
+                }
+            }
+            else if (cur.delta.x > 0)
+            {
+                Vector2 bL = cur.pos + new Vector2(cur.size.x / 2f, -cur.size.y / 2f);
+                Vector2 tR = cur.pos + new Vector2((cur.size.x / 2f) + pixelToUnit, cur.size.y / 2f);
+                foreach (StaticObject other in checkBoxStatic(bL, tR, cur.nearbyStatic))
+                {
+                    staticCollision(cur, other, 0);
+                }
+                foreach (DynamicObject other in checkBoxDynamic(bL, tR, dynamicObjects))
+                {
+                    if (cur.id != other.id)
+                    {
+                        dynamicCollision(cur, other, 0);
+                    }
+                }
+            }
+        
+            if (cur.delta.y < 0)
+            {
+                Vector2 bL = cur.pos + new Vector2(-cur.size.x / 2f, -(cur.size.y / 2f) - pixelToUnit);
+                Vector2 tR = cur.pos + new Vector2(cur.size.x / 2f, -(cur.size.y / 2f));
+                foreach (StaticObject other in checkBoxStatic(bL, tR, cur.nearbyStatic))
+                {
+                    staticCollision(cur, other, 270);
+                }
+                foreach (DynamicObject other in checkBoxDynamic(bL, tR, dynamicObjects))
+                {
+                    if (cur.id != other.id)
+                    {
+                        dynamicCollision(cur, other, 270);
+                    }
+                }
+            }
+            else if (cur.delta.y > 0)
+            {
+                Vector2 bL = cur.pos + new Vector2(-cur.size.x / 2f, cur.size.y / 2f);
+                Vector2 tR = cur.pos + new Vector2(cur.size.x / 2f, (cur.size.y / 2f) + pixelToUnit);
+                foreach (StaticObject other in checkBoxStatic(bL, tR, cur.nearbyStatic))
+                {
+                    staticCollision(cur, other, 90);
+                }
+                foreach (DynamicObject other in checkBoxDynamic(bL, tR, dynamicObjects))
+                {
+                    if (cur.id != other.id)
+                    {
+                        dynamicCollision(cur, other, 90);
+                    }
+                }
+            }
+        }
     }
+
+    private void Cleanup()
+    {
+
+    }
+
+
+    public int registerStatic(StaticObject stObj)
+    {
+        staticObjects.Add(stObj);
+        return dynamicObjects.Count;
+    }
+
+    public int registerDynamic(DynamicObject dObj)
+    {
+        dynamicObjects.Add(dObj);
+        return dynamicObjects.Count;
+    }
+
+
+    #region Overlaps and collisions
+    public List<StaticObject> checkBoxStatic(Vector2 bottomLeft, Vector2 topRight, List<StaticObject> stObjs)               //Returns all elements of stObjs overlapping the box.
+    {
+        List<StaticObject> ret = new List<StaticObject>();
+
+        for(int i = 0; i < stObjs.Count; i++)
+        {
+            StaticObject other = stObjs[i];
+            Vector2 otherBL = other.pos - other.size / 2f;
+            Vector2 otherTR = other.pos + other.size / 2f;
+            if (bottomLeft.x >= otherTR.x || bottomLeft.y >= otherTR.y || topRight.x <= otherBL.x || topRight.y <= otherBL.y)
+            {
+                continue;
+            }
+            ret.Add(stObjs[i]);
+        }
+        return ret;
+    }
+
+    public List<DynamicObject> checkBoxDynamic(Vector2 bottomLeft, Vector2 topRight, List<DynamicObject> dynObjs)             //Returns all type t ShysicsObjects overlapping the box.
+    {
+        List<DynamicObject> ret = new List<DynamicObject>();
+
+        for(int i = 0; i < dynObjs.Count; i++)
+        {
+            DynamicObject other = dynamicObjects[i];
+            Vector2 otherBL = other.pos - other.size / 2f;
+            Vector2 otherTR = other.pos + other.size / 2f;
+            if (bottomLeft.x > otherTR.x || bottomLeft.y > otherTR.y || topRight.x < otherBL.x || topRight.y < otherBL.y)
+            {
+                continue;
+            }
+            ret.Add(dynObjs[i]);
+        }
+        return ret;
+    }
+
+    private void staticCollision(DynamicObject dObj, StaticObject stObj, float angle)
+    {
+        float speed = dObj.vel.magnitude;
+        float disp = dObj.delta.magnitude;
+
+        float velAngle = Vector2.SignedAngle(Vector2.right, dObj.vel);
+        float impactAngle = (velAngle - angle + 360f) % 360f;
+        //float parallelAngle = (angle + 450f) % 360f;
+
+        float normalFactor = -Mathf.Cos(impactAngle * Mathf.Rad2Deg);
+        float parallelFactor = Mathf.Sin(impactAngle * Mathf.Deg2Rad);
+        float frictionFactor = Mathf.Abs(normalFactor * (dObj.friction + stObj.friction));
+        float bounceFactor = normalFactor * (dObj.elasticity + stObj.elasticity) / 2;
+
+        float parallelSpeed;
+        float parallelDisp;
+        if (Mathf.Abs(parallelFactor) <= frictionFactor)
+        {
+            parallelSpeed = 0;
+            parallelDisp = 0;
+        }
+        else
+        {
+            parallelSpeed = (speed * parallelFactor) - (speed * frictionFactor * Mathf.Sign(parallelFactor));
+            parallelDisp = (disp * parallelFactor) - (disp * frictionFactor * Mathf.Sign(parallelFactor));
+        }
+
+        float normalSpeed = speed * bounceFactor;
+        float normalDisp = disp * bounceFactor;
+
+        float sinA = Mathf.Sin(angle * Mathf.Deg2Rad);
+        float cosA = Mathf.Cos(angle * Mathf.Deg2Rad);
+        //float sinP = Mathf.Sin(parallelAngle * Mathf.Deg2Rad);
+        //float cosP = Mathf.Cos(parallelAngle * Mathf.Deg2Rad);
+
+        float newVelX = parallelSpeed * -sinA + normalSpeed * cosA;
+        float newVelY = parallelSpeed * cosA + normalSpeed * sinA;
+        float newDeltaX = parallelDisp * -sinA + normalDisp * cosA;
+        float newDeltaY = parallelDisp * cosA + normalDisp * sinA;
+
+        dObj.vel = new Vector2(newVelX, newVelY);
+        dObj.delta = new Vector2(newDeltaX, newDeltaY);
+
+        //dObj.vel = new Vector2(parallelSpeed * Mathf.Cos((parallelAngle) * Mathf.Deg2Rad), parallelSpeed * Mathf.Sin((parallelAngle) * Mathf.Deg2Rad));
+        //dObj.delta = new Vector2(parallelDisp * Mathf.Cos((parallelAngle) * Mathf.Deg2Rad), parallelDisp * Mathf.Sin((parallelAngle) * Mathf.Deg2Rad));
+        dObj.registerCol(false, stObj.id, stObj.type, dObj.pos, angle);
+    }
+
+    private void dynamicCollision(DynamicObject dObjA, DynamicObject dObjB, float angle)
+    {
+        Vector2 impactUnit = RadianToVector2(angle);
+        Vector2 impactMomentum = dObjA.mass * dObjA.vel * impactUnit + dObjB.mass * dObjB.vel * -impactUnit;
+
+        dObjA.vel = dObjA.vel - dObjA.vel * impactUnit + impactMomentum / dObjA.mass;
+        dObjB.vel = dObjB.vel - dObjB.vel * -impactUnit + impactMomentum / dObjB.mass;
+
+        dObjA.delta -= dObjA.delta * impactUnit;
+        dObjB.delta -= dObjB.delta * -impactUnit;
+
+        dObjA.registerCol(false, dObjB.id, dObjB.type, dObjA.pos, angle);
+        dObjB.registerCol(false, dObjA.id, dObjA.type, dObjB.pos, (angle + 180) % 360);
+    }
+    #endregion
+
+
 
     private Vector2 pixelClamp(Vector2 v)
     {
-        Vector2 pixelVector = new Vector2(Mathf.RoundToInt(v.x * ppu), Mathf.RoundToInt(v.y * ppu));
-        return pixelVector / ppu;
+        Vector2 pixelVector = new Vector2(Mathf.RoundToInt(v.x * unitToPixel), Mathf.RoundToInt(v.y * unitToPixel));
+        return pixelVector * pixelToUnit;
+    }
+    public static Vector2 RadianToVector2(float radian)
+    {
+        return new Vector2(Mathf.Cos(radian), Mathf.Sin(radian));
     }
 
+    public static Vector2 DegreeToVector2(float degree)
+    {
+        return RadianToVector2(degree * Mathf.Deg2Rad);
+    }
 }

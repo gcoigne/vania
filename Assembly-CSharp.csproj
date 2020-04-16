@@ -70,9 +70,12 @@
     <Compile Include="Assets\Scripts\Dialog\DialogManagement.cs" />
     <Compile Include="Assets\Scripts\Object\Door.cs" />
     <Compile Include="Assets\Scripts\Object\PixelStatic.cs" />
+    <Compile Include="Assets\Scripts\Physics\DynamicObject.cs" />
+    <Compile Include="Assets\Scripts\Physics\Scanner.cs" />
+    <Compile Include="Assets\Scripts\Physics\StaticObject.cs" />
     <Compile Include="Assets\Scripts\Player\Dart.cs" />
     <Compile Include="Assets\Scripts\Player\Movement.cs" />
-    <Compile Include="Assets\Scripts\Player\PixelMovement.cs" />
+    <Compile Include="Assets\Scripts\Player\PixelPlayer.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerMovement.cs" />
     <Compile Include="Assets\Scripts\Visual\Camera_Dynamic.cs" />
     <Compile Include="Assets\Scripts\Visual\Camera_Follow.cs" />
